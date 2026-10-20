@@ -14,7 +14,6 @@
 </header>
 
 <div class="canvas-wrap">
-  <!-- Botones de Zoom discretos -->
   <div class="zoom-controls">
     <button class="zoom-btn" id="zoomIn" title="Acercar (Zoom +)">+</button>
     <button class="zoom-btn" id="zoomReset" title="Restablecer tamaño" style="font-size:11px;">1:1</button>
@@ -48,7 +47,6 @@
     <g id="scene"></g>
     <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
     
-    <!-- Personaje Triángulo Realista / 3D -->
     <g id="char" transform="translate(80, 80)" style="cursor: grab;">
       <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
       <g id="char-feet">
@@ -71,7 +69,6 @@
       <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
       <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
       
-      <!-- Globo de diálogo amplio -->
       <g id="bubble" transform="translate(24, -62)">
         <rect id="speech-box" rx="10" ry="10" width="240" height="42" fill="#ffffff" stroke="#17214d" stroke-width="1.8" filter="url(#shadow3d)"/>
         <polygon points="4,32 -6,40 14,32" fill="#ffffff"/>
@@ -90,7 +87,6 @@
   
   <div class="btns" id="pre"></div>
 
-  <!-- Tejer hilos paso a paso -->
   <div class="row">
     <label for="visibleLines">Hilos activos</label>
     <input id="visibleLines" type="range" min="0" max="10" step="1" value="10">
