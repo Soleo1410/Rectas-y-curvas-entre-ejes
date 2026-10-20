@@ -1,8 +1,8 @@
 :root{--bg:#eef2f7;--ink:#17214d;--mut:#5b6685;--card:#fff;--acc:#ff4d6d;--line:#d5dcea}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;overflow:hidden}
 body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top);-webkit-tap-highlight-color:transparent}
-header{padding:10px 16px 2px}
+header{padding:8px 16px 2px;flex-shrink:0}
 h1{font-size:1.1rem;margin:0;letter-spacing:-.01em}
 header p{margin:2px 0 0;font-size:.82rem;color:var(--mut)}
 
@@ -16,7 +16,7 @@ header p{margin:2px 0 0;font-size:.82rem;color:var(--mut)}
 .dim{opacity:.12}
 #hd{cursor:grab;touch-action:none}
 
-/* Botones de Zoom discretos */
+/* Botones de Zoom flotantes */
 .zoom-controls{
   position:absolute;
   top:12px;
@@ -46,17 +46,61 @@ header p{margin:2px 0 0;font-size:.82rem;color:var(--mut)}
 .zoom-btn:hover{background:#ffffff;border-color:#94a3b8}
 .zoom-btn:active{transform:scale(0.95)}
 
-.bottom{background:var(--card);border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(23,33,77,.12);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+/* Panel Desplegable */
+.bottom{
+  background:var(--card);
+  border-radius:20px 20px 0 0;
+  box-shadow:0 -6px 24px rgba(23,33,77,.12);
+  padding:4px 16px calc(10px + env(safe-area-inset-bottom));
+  flex-shrink:0;
+  transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position:relative;
+  z-index:30;
+}
+.bottom.collapsed{
+  transform:translateY(calc(100% - 38px));
+}
+
+/* Tirador del panel */
+.panel-toggle-bar{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:6px 0;
+  cursor:pointer;
+  user-select:none;
+}
+.panel-toggle-btn{
+  background:rgba(238,242,247,0.85);
+  border:1px solid var(--line);
+  font-size:0.78rem;
+  font-weight:600;
+  color:var(--mut);
+  padding:3px 14px;
+  border-radius:999px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  transition:background 0.2s, color 0.2s;
+}
+.panel-toggle-btn:hover{background:#e2e8f0;color:var(--ink)}
+
+.panel-content{
+  max-height:38vh;
+  overflow-y:auto;
+  padding-top:2px;
+}
+
 .row{display:flex;align-items:center;gap:10px;margin:6px 0}
-.row label{font-size:.85rem;color:var(--mut);min-width:72px}
-.row output{font-weight:700;min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+.row label{font-size:.85rem;color:var(--mut);min-width:76px}
+.row output{font-weight:700;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
 
 .input-text{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:.88rem;color:var(--ink)}
 .color-picker{border:none;background:none;width:32px;height:32px;cursor:pointer;padding:0}
 
 input[type=range]{flex:1;accent-color:var(--acc);height:28px}
 .btns{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
-button{font:inherit;font-size:.86rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 13px;cursor:pointer}
+button{font:inherit;font-size:.86rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
 button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
@@ -80,3 +124,21 @@ button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink
   95%{transform:scaleY(0.1)}
 }
 #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
+
+/* Globo de diálogo adaptativo HTML dentro de SVG */
+.bubble-container{
+  background:#ffffff;
+  border:2px solid #17214d;
+  border-radius:12px;
+  padding:6px 10px;
+  font-size:11px;
+  font-weight:700;
+  color:#17214d;
+  line-height:1.25;
+  box-shadow:0 3px 8px rgba(15,23,42,0.18);
+  word-wrap:break-word;
+  white-space:normal;
+  display:inline-block;
+  max-width:270px;
+  pointer-events:none;
+}

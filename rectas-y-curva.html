@@ -7,9 +7,9 @@
   <style>
     :root{--bg:#eef2f7;--ink:#17214d;--mut:#5b6685;--card:#fff;--acc:#ff4d6d;--line:#d5dcea}
     *{box-sizing:border-box}
-    html,body{height:100%;margin:0}
+    html,body{height:100%;margin:0;overflow:hidden}
     body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top);-webkit-tap-highlight-color:transparent}
-    header{padding:10px 16px 2px}
+    header{padding:8px 16px 2px;flex-shrink:0}
     h1{font-size:1.1rem;margin:0;letter-spacing:-.01em}
     header p{margin:2px 0 0;font-size:.82rem;color:var(--mut)}
 
@@ -23,7 +23,7 @@
     .dim{opacity:.12}
     #hd{cursor:grab;touch-action:none}
 
-    /* Botones de Zoom discretos */
+    /* Botones de Zoom flotantes */
     .zoom-controls{
       position:absolute;
       top:12px;
@@ -53,17 +53,61 @@
     .zoom-btn:hover{background:#ffffff;border-color:#94a3b8}
     .zoom-btn:active{transform:scale(0.95)}
 
-    .bottom{background:var(--card);border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(23,33,77,.12);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+    /* Panel Desplegable */
+    .bottom{
+      background:var(--card);
+      border-radius:20px 20px 0 0;
+      box-shadow:0 -6px 24px rgba(23,33,77,.12);
+      padding:4px 16px calc(10px + env(safe-area-inset-bottom));
+      flex-shrink:0;
+      transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position:relative;
+      z-index:30;
+    }
+    .bottom.collapsed{
+      transform:translateY(calc(100% - 38px));
+    }
+
+    /* Tirador / Botón de colapso */
+    .panel-toggle-bar{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:6px 0;
+      cursor:pointer;
+      user-select:none;
+    }
+    .panel-toggle-btn{
+      background:rgba(238,242,247,0.85);
+      border:1px solid var(--line);
+      font-size:0.78rem;
+      font-weight:600;
+      color:var(--mut);
+      padding:3px 14px;
+      border-radius:999px;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      transition:background 0.2s, color 0.2s;
+    }
+    .panel-toggle-btn:hover{background:#e2e8f0;color:var(--ink)}
+
+    .panel-content{
+      max-height:38vh;
+      overflow-y:auto;
+      padding-top:2px;
+    }
+
     .row{display:flex;align-items:center;gap:10px;margin:6px 0}
-    .row label{font-size:.85rem;color:var(--mut);min-width:72px}
-    .row output{font-weight:700;min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+    .row label{font-size:.85rem;color:var(--mut);min-width:76px}
+    .row output{font-weight:700;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
 
     .input-text{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:.88rem;color:var(--ink)}
     .color-picker{border:none;background:none;width:32px;height:32px;cursor:pointer;padding:0}
 
     input[type=range]{flex:1;accent-color:var(--acc);height:28px}
     .btns{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
-    button{font:inherit;font-size:.86rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 13px;cursor:pointer}
+    button{font:inherit;font-size:.86rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
     button:focus-visible,input:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
     button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
@@ -87,6 +131,24 @@
       95%{transform:scaleY(0.1)}
     }
     #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
+
+    /* Globo de diálogo adaptativo HTML dentro de SVG */
+    .bubble-container{
+      background:#ffffff;
+      border:2px solid #17214d;
+      border-radius:12px;
+      padding:6px 10px;
+      font-size:11px;
+      font-weight:700;
+      color:#17214d;
+      line-height:1.25;
+      box-shadow:0 3px 8px rgba(15,23,42,0.18);
+      word-wrap:break-word;
+      white-space:normal;
+      display:inline-block;
+      max-width:270px;
+      pointer-events:none;
+    }
   </style>
 </head>
 <body>
@@ -96,7 +158,7 @@
 </header>
 
 <div class="canvas-wrap">
-  <!-- Botones de Zoom discretos -->
+  <!-- Botones de Zoom -->
   <div class="zoom-controls">
     <button class="zoom-btn" id="zoomIn" title="Acercar (Zoom +)">+</button>
     <button class="zoom-btn" id="zoomReset" title="Restablecer tamaño" style="font-size:11px;">1:1</button>
@@ -153,61 +215,73 @@
       <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
       <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
       
-      <!-- Globo de diálogo con ancho ampliado para preguntas pedagógicas -->
-      <g id="bubble" transform="translate(24, -62)">
-        <rect id="speech-box" rx="10" ry="10" width="240" height="42" fill="#ffffff" stroke="#17214d" stroke-width="1.8" filter="url(#shadow3d)"/>
-        <polygon points="4,32 -6,40 14,32" fill="#ffffff"/>
-        <text id="char-speech" x="120" y="24" text-anchor="middle" font-size="10.5" font-weight="700" fill="#17214d">¡Hola! Investigemos juntos</text>
+      <!-- Globo de diálogo inteligente autoadaptable -->
+      <g id="bubble" transform="translate(24, -68)">
+        <polygon points="4,32 -6,40 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.5"/>
+        <foreignObject x="0" y="-10" width="280" height="90">
+          <div xmlns="http://www.w3.org/1999/xhtml" id="char-speech" class="bubble-container">
+            ¡Hola! Investigemos juntos
+          </div>
+        </foreignObject>
       </g>
     </g>
   </svg>
 </div>
 
+<!-- Panel de Control Desplegable -->
 <section class="bottom" id="ctrl">
-  <div class="row">
-    <label for="th">Ángulo</label>
-    <input id="th" type="range" min="0" max="180" step="1" value="90">
-    <output id="thv">90°</output>
-  </div>
-  
-  <div class="btns" id="pre"></div>
-
-  <!-- Tejer hilos paso a paso -->
-  <div class="row">
-    <label for="visibleLines">Hilos activos</label>
-    <input id="visibleLines" type="range" min="0" max="10" step="1" value="10">
-    <output id="lineCountVal">10 / 10</output>
-  </div>
-
-  <div class="btns">
-    <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
-    <button class="chip" id="bStepReset">Reiniciar tejido</button>
-  </div>
-
-  <div class="row">
-    <label>Cuadrantes</label>
-    <div class="btns" id="quadBtns" style="margin:0;">
-      <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
-      <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
-      <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
-      <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
-      <button class="btn-sub" id="qAll">Todos</button>
-      <button class="btn-sub" id="qClear">Ninguno</button>
+  <!-- Pestaña para abrir/cerrar panel -->
+  <div class="panel-toggle-bar" id="panelToggle">
+    <div class="panel-toggle-btn" id="panelToggleText">
+      <span>Ocultar controles</span> <span id="panelToggleIcon">▾</span>
     </div>
   </div>
 
-  <div class="btns">
-    <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
-    <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
-    <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
-    <button class="chip" id="bReset">Restablecer colores</button>
-  </div>
+  <div class="panel-content">
+    <div class="row">
+      <label for="th">Ángulo</label>
+      <input id="th" type="range" min="0" max="180" step="1" value="90">
+      <output id="thv">90°</output>
+    </div>
+    
+    <div class="btns" id="pre"></div>
 
-  <div class="row char-settings">
-    <label for="triName">Nombre:</label>
-    <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">
-    <label for="triColor" style="min-width:auto;margin-left:8px;">Color 3D:</label>
-    <input type="color" id="triColor" value="#2563eb" class="color-picker">
+    <div class="row">
+      <label for="visibleLines">Hilos activos</label>
+      <input id="visibleLines" type="range" min="0" max="50" step="1" value="10">
+      <output id="lineCountVal">10 / 50</output>
+    </div>
+
+    <div class="btns">
+      <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
+      <button class="chip" id="bStepReset">Reiniciar tejido</button>
+    </div>
+
+    <div class="row">
+      <label>Cuadrantes</label>
+      <div class="btns" id="quadBtns" style="margin:0;">
+        <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
+        <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
+        <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
+        <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
+        <button class="btn-sub" id="qAll">Todos</button>
+        <button class="btn-sub" id="qClear">Ninguno</button>
+      </div>
+    </div>
+
+    <div class="btns">
+      <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
+      <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
+      <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
+      <button class="chip" id="bReset">Restablecer colores</button>
+    </div>
+
+    <div class="row char-settings">
+      <label for="triName">Nombre:</label>
+      <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">
+      <label for="triColor" style="min-width:auto;margin-left:8px;">Color 3D:</label>
+      <input type="color" id="triColor" value="#2563eb" class="color-picker">
+    </div>
   </div>
 </section>
 
@@ -227,9 +301,9 @@
 var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
-  n:10,              // Total de divisiones (clavos del 1 al 10)
-  visibleLines:10,   // Cantidad de hilos visibles actualmente
-  stepPlaying:false, // Control de tejido paso a paso
+  n:50,              // Capacidad máxima de hilos
+  visibleLines:10,   // Cantidad inicial
+  stepPlaying:false,
   stepTimer:null,
   zoom:1.0,
   quads:{I:true, II:false, III:true, IV:false},
@@ -322,7 +396,7 @@ function render(){
   /* 2. CUADRÍCULA */
   if(S.grid && s>0.04){
     var g='';
-    var step=n>20?2:1;
+    var step=n>20?5:1;
     for(var k=-n;k<=n;k+=step){
       g+=seg(P(k,-n),P(k,n));
       g+=seg(P(-n,k),P(n,k));
@@ -330,7 +404,7 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
-  /* 3. RECTAS Y CURVAS POR CADA CUADRANTE SELECCIONADO */
+  /* 3. RECTAS Y CURVAS */
   var quadSigns={
     'I':{sx:1,sy:1},
     'II':{sx:-1,sy:1},
@@ -343,13 +417,11 @@ function render(){
     var sx=quadSigns[qKey].sx;
     var sy=quadSigns[qKey].sy;
 
-    // Solo se dibujan hasta S.visibleLines (tejido progresivo)
     for(var j=1;j<=S.visibleLines;j++){
       var id='l_'+qKey+'_'+j;
-      o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 2);
+      o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 1.8);
     }
 
-    // La curva envolvente se muestra si está activa y hay al menos 4 rectas tejidas
     if(S.curve && S.visibleLines>=4){
       var dCurve='';
       var maxT=S.visibleLines/n;
@@ -363,7 +435,7 @@ function render(){
     }
   });
 
-  /* 4. SECTORES Y NÚMEROS DE GRADOS EN NEGRO NÍTIDO */
+  /* 4. SECTORES Y GRADOS */
   var r=Math.min(48, sc*L*0.3);
   var O=P(0,0);
 
@@ -426,7 +498,6 @@ function render(){
   hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
 }
 
-/* Panel de información con deducción analítica formal del anexo */
 function info(id){
   var n=S.n, th=Math.round(S.th), L=n+1;
   if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal (−'+n+' a +'+n+').</p>';
@@ -492,7 +563,7 @@ function sync(){
 }
 $('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync();updateCharExpression()});
 
-/* Tejido progresivo de hilos */
+/* Tejido progresivo rápido */
 $('#visibleLines').addEventListener('input',function(e){
   stopStepPlay();
   S.visibleLines=+e.target.value;
@@ -513,7 +584,7 @@ $('#bStepPlay').onclick=function(){
       } else {
         stopStepPlay();
       }
-    },550);
+    }, 120); // Velocidad fluida
   }
 };
 
@@ -529,14 +600,12 @@ function stopStepPlay(){
   $('#bStepPlay').textContent='▶ Tejer hilos paso a paso';
 }
 
-/* Botones de ángulos directos (incluidos 60° y 120° de la planificación) */
 $('#pre').innerHTML='';
 [0, 60, 90, 120, 180].forEach(function(a){
   var b=document.createElement('button');
   b.textContent=a+'°';
   b.onclick=function(){
     S.anim=false;pa();S.th=a;sync();
-    // Diálogos específicos pedidos para 60° y 120°
     if(a===60){
       say("¡Ángulo agudo de 60°! Mirá cómo se comprime la parábola.");
     } else if(a===120){
@@ -548,7 +617,6 @@ $('#pre').innerHTML='';
   $('#pre').appendChild(b);
 });
 
-/* Zoom */
 $('#zoomIn').onclick=function(){S.zoom=Math.min(3.0, S.zoom+0.2);render()};
 $('#zoomOut').onclick=function(){S.zoom=Math.max(0.4, S.zoom-0.2);render()};
 $('#zoomReset').onclick=function(){S.zoom=1.0;render()};
@@ -560,7 +628,6 @@ svg.addEventListener('wheel',function(e){
   render();
 },{passive:false});
 
-/* Gestión de Cuadrantes */
 $('#quadBtns').addEventListener('click',function(e){
   var q=e.target.dataset.q;
   if(q){
@@ -594,7 +661,6 @@ tog('#bCurve','curve');tog('#bGrid','grid');tog('#bAnim','anim');
 $('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
 function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
 
-/* Arrastre de eje Y */
 var drag=false;
 hd.addEventListener('pointerdown',function(e){drag=true;S.anim=false;pa();hd.setPointerCapture(e.pointerId);e.preventDefault()});
 hd.addEventListener('pointermove',function(e){if(!drag)return;
@@ -608,7 +674,6 @@ hd.addEventListener('pointermove',function(e){if(!drag)return;
 hd.addEventListener('pointerup',function(){drag=false});
 hd.addEventListener('pointercancel',function(){drag=false});
 
-/* Animación */
 var dir=1,last=0;
 function loop(){last=performance.now();requestAnimationFrame(step)}
 function step(t){
@@ -623,7 +688,7 @@ function step(t){
 }
 
 /* Personaje Triángulo */
-var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech'),speechBox=$('#speech-box');
+var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
 var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
 var charPos={x:80,y:80},charDrag=false,charOffset={x:0,y:0};
 
@@ -631,12 +696,7 @@ function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+
 
 function say(texto){
   var nom=S.charName||'Tri';
-  chSpeech.textContent=nom+': '+texto;
-  // Ajustar ancho del cuadro según extensión
-  var len=chSpeech.textContent.length;
-  var w=Math.max(160, Math.min(320, len*6.8));
-  speechBox.setAttribute('width', w);
-  chSpeech.setAttribute('x', w/2);
+  chSpeech.innerHTML='<strong>'+nom+':</strong> '+texto;
 }
 
 function updateCharExpression(){
@@ -655,7 +715,7 @@ function updateCharExpression(){
     chMouth.setAttribute('d','M -8 24 Q 0 31 8 24');
     say("90° Ángulo recto clásico.");
   } else {
-    say("Ángulo: "+th+"°");
+    say("Ángulo actual: "+th+"°");
   }
 }
 
@@ -672,7 +732,6 @@ $('#triColor').addEventListener('input',function(e){
   baseBody.setAttribute('fill',e.target.value);
 });
 
-// Al tocar o arrastrar al personaje, lanza las preguntas detonantes
 ch.addEventListener('pointerdown',function(e){
   charDrag=true;
   var r=svg.getBoundingClientRect();
@@ -693,6 +752,15 @@ ch.addEventListener('pointermove',function(e){
 
 ch.addEventListener('pointerup',function(){charDrag=false});
 ch.addEventListener('pointercancel',function(){charDrag=false});
+
+/* Lógica del panel plegable/desplegable */
+var panelOpen=true;
+$('#panelToggle').onclick=function(){
+  panelOpen=!panelOpen;
+  $('#ctrl').classList.toggle('collapsed', !panelOpen);
+  $('#panelToggleText').innerHTML=panelOpen ? '<span>Ocultar controles</span> <span>▾</span>' : '<span>Mostrar controles</span> <span>▴</span>';
+  setTimeout(render, 320); // Recalcula el tamaño del plano al desplegar o plegar
+};
 
 var bob=0;
 setInterval(function(){

@@ -2,8 +2,8 @@
 var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
-  n:50,
-  visibleLines:10,
+  n:50,              // Capacidad máxima de hilos
+  visibleLines:10,   // Cantidad inicial
   stepPlaying:false,
   stepTimer:null,
   zoom:1.0,
@@ -97,7 +97,7 @@ function render(){
   /* 2. CUADRÍCULA */
   if(S.grid && s>0.04){
     var g='';
-    var step=n>20?2:1;
+    var step=n>20?5:1;
     for(var k=-n;k<=n;k+=step){
       g+=seg(P(k,-n),P(k,n));
       g+=seg(P(-n,k),P(n,k));
@@ -120,7 +120,7 @@ function render(){
 
     for(var j=1;j<=S.visibleLines;j++){
       var id='l_'+qKey+'_'+j;
-      o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 2);
+      o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 1.8);
     }
 
     if(S.curve && S.visibleLines>=4){
@@ -264,6 +264,7 @@ function sync(){
 }
 $('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync();updateCharExpression()});
 
+/* Tejido progresivo rápido */
 $('#visibleLines').addEventListener('input',function(e){
   stopStepPlay();
   S.visibleLines=+e.target.value;
@@ -284,7 +285,7 @@ $('#bStepPlay').onclick=function(){
       } else {
         stopStepPlay();
       }
-    },120);
+    }, 120);
   }
 };
 
@@ -387,7 +388,8 @@ function step(t){
   requestAnimationFrame(step);
 }
 
-var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech'),speechBox=$('#speech-box');
+/* Personaje Triángulo */
+var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
 var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
 var charPos={x:80,y:80},charDrag=false,charOffset={x:0,y:0};
 
@@ -395,11 +397,7 @@ function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+
 
 function say(texto){
   var nom=S.charName||'Tri';
-  chSpeech.textContent=nom+': '+texto;
-  var len=chSpeech.textContent.length;
-  var w=Math.max(160, Math.min(320, len*6.8));
-  speechBox.setAttribute('width', w);
-  chSpeech.setAttribute('x', w/2);
+  chSpeech.innerHTML='<strong>'+nom+':</strong> '+texto;
 }
 
 function updateCharExpression(){
@@ -418,7 +416,7 @@ function updateCharExpression(){
     chMouth.setAttribute('d','M -8 24 Q 0 31 8 24');
     say("90° Ángulo recto clásico.");
   } else {
-    say("Ángulo: "+th+"°");
+    say("Ángulo actual: "+th+"°");
   }
 }
 
@@ -455,6 +453,15 @@ ch.addEventListener('pointermove',function(e){
 
 ch.addEventListener('pointerup',function(){charDrag=false});
 ch.addEventListener('pointercancel',function(){charDrag=false});
+
+/* Lógica del panel plegable/desplegable */
+var panelOpen=true;
+$('#panelToggle').onclick=function(){
+  panelOpen=!panelOpen;
+  $('#ctrl').classList.toggle('collapsed', !panelOpen);
+  $('#panelToggleText').innerHTML=panelOpen ? '<span>Ocultar controles</span> <span>▾</span>' : '<span>Mostrar controles</span> <span>▴</span>';
+  setTimeout(render, 320);
+};
 
 var bob=0;
 setInterval(function(){
