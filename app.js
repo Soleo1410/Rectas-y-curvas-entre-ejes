@@ -83,27 +83,39 @@ function render(){
     }
   }
 
-  /* 7. ÁNGULO (ADELANTE DE TODO PARA QUE NUNCA SE TAPE) */
-  var r=Math.min(52,sc*L*.32),O=P(0,0),ac=colOf('ang');
-  var ma=rad(S.th/2),lr=r+18;
+  /* 7. CAPA FRONTAL SUPERIOR: EL ÁNGULO Y SU ETIQUETA */
+  var r=Math.min(58,sc*L*.38),O=P(0,0),ac=colOf('ang');
+  var ma=rad(S.th/2);
+  
   if(S.th>0.5){
     var sweep=S.th>180?1:0;
     var ad='M'+pt(O)+'L'+(O[0]+r).toFixed(1)+','+O[1].toFixed(1)+'A'+r+','+r+' 0 '+sweep+' 0 '+(O[0]+r*c).toFixed(1)+','+(O[1]-r*s).toFixed(1)+'Z';
     
-    // Arco con borde grueso para sobresalir sobre las rectas
+    // Sector circular relleno y con borde nítido
     o+='<g data-id="ang" class="g'+(S.off.ang?' dim':'')+'" style="cursor:pointer">'+
-       '<path d="'+ad+'" fill="'+ac+'" fill-opacity="'+(S.sel==='ang'?.65:.42)+'" stroke="'+ac+'" stroke-width="2.5"/>'+
+       '<path d="'+ad+'" fill="'+ac+'" fill-opacity="0.55" stroke="'+ac+'" stroke-width="3"/>'+
        '</g>';
     
-    // Texto con halo blanco para evitar que las líneas de fondo lo crucen
-    var tx=(O[0]+lr*Math.cos(ma)).toFixed(1);
-    var ty=(O[1]-lr*Math.sin(ma)+4).toFixed(1);
-    o+='<text x="'+tx+'" y="'+ty+'" text-anchor="middle" style="font-weight:800;fill:#b45309;font-size:15px;paint-order:stroke fill;stroke:#ffffff;stroke-width:5px;stroke-linejoin:round;pointer-events:none">'+Math.round(S.th)+'°</text>';
+    // Posición dinámica de la etiqueta: sube según la inclinación para no quedar sobre la curva
+    var labelDist = r + 26;
+    var tx=(O[0]+labelDist*Math.cos(ma)).toFixed(1);
+    var ty=(O[1]-labelDist*Math.sin(ma)).toFixed(1);
+
+    // Etiqueta flotante con caja (badge) protectora que impide que cualquier trazo lo opaque
+    o+='<g style="pointer-events:none; isolation: isolate;">'+
+       '<rect x="'+(tx-26)+'" y="'+(ty-14)+'" width="52" height="24" rx="12" fill="#ffffff" stroke="'+ac+'" stroke-width="2" opacity="0.95"/>'+
+       '<text x="'+tx+'" y="'+(+ty+4)+'" text-anchor="middle" style="font-weight:900;fill:#b45309;font-size:14px;font-family:system-ui,sans-serif">'+Math.round(S.th)+'°</text>'+
+       '</g>';
   } else {
-    o+='<text x="'+(O[0]+34).toFixed(1)+'" y="'+(O[1]-14).toFixed(1)+'" text-anchor="middle" style="font-weight:800;fill:#b45309;font-size:13px;paint-order:stroke fill;stroke:#ffffff;stroke-width:4px;">0° (Superpuestos)</text>';
+    o+='<g style="pointer-events:none">'+
+       '<rect x="'+(O[0]+6)+'" y="'+(O[1]-26)+'" width="150" height="22" rx="6" fill="#ffffff" stroke="'+ac+'" stroke-width="1.5" opacity="0.95"/>'+
+       '<text x="'+(O[0]+81)+'" y="'+(O[1]-11)+'" text-anchor="middle" style="font-weight:800;fill:#b45309;font-size:12px">0° (Superpuestos)</text>'+
+       '</g>';
   }
 
   scene.innerHTML=o;
+
+  // Asegurar que el manejador circular del eje quede detrás de la etiqueta si se cruzan
   var hp=P(0,L);
   hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
   updateCharExpression();
@@ -116,7 +128,7 @@ function info(id){
   if(id==='ex')return '<p>Eje horizontal con los puntos <b>1, 2, … '+n+'</b>.</p>';
   if(id==='ey')return '<p>Eje móvil: forma un ángulo de <b>'+Math.round(th)+'°</b> con el eje x.</p>';
   if(id==='ang')return '<p>Ángulo entre los ejes: <b>'+Math.round(th)+'°</b> ('+tipo+').</p>'+(th===0?'<p>En 0°, los dos ejes se superponen sobre la misma semirrecta.</p>':th===180?'<p>En 180°, forman una recta completa (sentidos opuestos).</p>':'');
-  if(id==='curve')return '<p>Envolvente parábolica. Al llegar a 0° o 180° la curva colapsa en un segmento recto continuo.</p>';
+  if(id==='curve')return '<p>Envolvente parabólica. Al llegar a 0° o 180° la curva colapsa en un segmento recto continuo.</p>';
   
   var i=+id.slice(1),a=i,b=L-i;
   var len=Math.sqrt(a*a+b*b-2*a*b*c);
