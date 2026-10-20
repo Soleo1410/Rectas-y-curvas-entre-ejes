@@ -19,20 +19,19 @@ function render(){
   var w=svg.clientWidth,h=svg.clientHeight;if(!w||!h)return;
   var n=S.n,L=n+1,c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
   
-  /* Ajuste de escala elástica para evitar colapsos en 0° y 180° */
+  /* Escala elástica */
   var minx=Math.min(0,L*c),maxx=Math.max(L,L*c);
   var bw=Math.max(L,maxx-minx);
-  var bh=Math.max(15,L*Math.abs(s)); // Se mantiene una altura mínima de referencia
+  var bh=Math.max(15,L*Math.abs(s));
   var M=36;
   
-  // Escala balanceada horizontal y verticalmente sin saltos bruscos
   var scX=(w-2*M)/bw;
   var scY=(h-2*M-16)/Math.max(bh,L*0.45);
   var sc=Math.min(scX,scY);
   V.sc=sc;
   
   V.ox=(w-sc*bw)/2-sc*minx;
-  V.oy=(h/2)+(sc*bh*0.4); // Centrado dinámico suave
+  V.oy=(h/2)+(sc*bh*0.4);
 
   function P(x,y){return [V.ox+sc*(x+y*c),V.oy-sc*y*s]}
   function pt(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}
@@ -46,45 +45,35 @@ function render(){
   }
   
   var o='';
+  
+  /* 1. CUADRÍCULA DE FONDO */
   if(S.grid && s>0.05){
     var g='';
     for(var k=1;k<=n;k++){g+=seg(P(k,0),P(k,L-k))+seg(P(0,k),P(L-k,k))}
     o+='<path d="'+g+'" stroke="#cfd8e8" stroke-width="1" fill="none"/>';
   }
-  
-  /* ===== ÁNGULO ===== */
-  var r=Math.min(46,sc*L*.3),O=P(0,0),ac=colOf('ang');
-  var ma=rad(S.th/2),lr=r*1.45;
-  if(S.th>0.5){
-    var sweep=S.th>180?1:0;
-    var ad='M'+pt(O)+'L'+(O[0]+r).toFixed(1)+','+O[1].toFixed(1)+'A'+r+','+r+' 0 '+sweep+' 0 '+(O[0]+r*c).toFixed(1)+','+(O[1]-r*s).toFixed(1)+'Z';
-    o+='<g data-id="ang" class="g'+(S.off.ang?' dim':'')+'"><path d="'+ad+'" fill="'+ac+'" fill-opacity="'+(S.sel==='ang'?.55:.28)+'" stroke="'+ac+'" stroke-width="1.5"/></g>';
-    o+='<text x="'+(O[0]+lr*Math.cos(ma)).toFixed(1)+'" y="'+(O[1]-lr*Math.sin(ma)+4).toFixed(1)+'" text-anchor="middle" style="font-weight:700;fill:#b45309;font-size:13px">'+Math.round(S.th)+'°</text>';
-  } else {
-    o+='<text x="'+(O[0]+28).toFixed(1)+'" y="'+(O[1]-12).toFixed(1)+'" text-anchor="middle" style="font-weight:700;fill:#b45309;font-size:13px">0° (Superpuestos)</text>';
-  }
 
-  /* ===== CURVA ===== */
+  /* 2. RECTAS INTERIORES */
+  for(var j=1;j<=n;j++){o+=el('l'+j,seg(P(j,0),P(0,L-j)),2.2)}
+
+  /* 3. CURVA ENVOLVENTE */
   if(S.curve){
     var d='';
     for(var i=0;i<=80;i++){var t=i/80,p=P(L*t*t,L*(1-t)*(1-t));d+=(i?'L':'M')+pt(p)}
     o+=el('curve',d,3.5);
   }
 
-  /* ===== RECTAS ===== */
-  for(var j=1;j<=n;j++){o+=el('l'+j,seg(P(j,0),P(0,L-j)),2.2)}
-
-  /* ===== EJES ===== */
+  /* 4. EJES PRINCIPALES */
   o+=el('ex',seg(P(0,0),P(L,0)),3.5);
   o+=el('ey',seg(P(0,0),P(0,L)),3.5);
 
-  /* ===== PUNTOS EN LOS EJES ===== */
+  /* 5. PUNTOS EN LOS EJES */
   for(var q=1;q<=n;q++){
     var a=P(q,0),b=P(0,L-q),cc=colOf('l'+q),dm=S.off['l'+q]?' class="dim"':'';
     o+='<g'+dm+' style="pointer-events:none"><circle cx="'+a[0].toFixed(1)+'" cy="'+a[1].toFixed(1)+'" r="4.5" fill="'+cc+'" stroke="#fff" stroke-width="1.5"/><circle cx="'+b[0].toFixed(1)+'" cy="'+b[1].toFixed(1)+'" r="4.5" fill="'+cc+'" stroke="#fff" stroke-width="1.5"/></g>';
   }
 
-  /* ===== NÚMEROS ===== */
+  /* 6. NÚMEROS DE LOS EJES */
   var st=n>24?5:n>13?2:1;
   for(var m=st;m<=L;m+=st){
     var px=P(m,0),py=P(0,m);
@@ -94,13 +83,33 @@ function render(){
     }
   }
 
+  /* 7. ÁNGULO (ADELANTE DE TODO PARA QUE NUNCA SE TAPE) */
+  var r=Math.min(52,sc*L*.32),O=P(0,0),ac=colOf('ang');
+  var ma=rad(S.th/2),lr=r+18;
+  if(S.th>0.5){
+    var sweep=S.th>180?1:0;
+    var ad='M'+pt(O)+'L'+(O[0]+r).toFixed(1)+','+O[1].toFixed(1)+'A'+r+','+r+' 0 '+sweep+' 0 '+(O[0]+r*c).toFixed(1)+','+(O[1]-r*s).toFixed(1)+'Z';
+    
+    // Arco con borde grueso para sobresalir sobre las rectas
+    o+='<g data-id="ang" class="g'+(S.off.ang?' dim':'')+'" style="cursor:pointer">'+
+       '<path d="'+ad+'" fill="'+ac+'" fill-opacity="'+(S.sel==='ang'?.65:.42)+'" stroke="'+ac+'" stroke-width="2.5"/>'+
+       '</g>';
+    
+    // Texto con halo blanco para evitar que las líneas de fondo lo crucen
+    var tx=(O[0]+lr*Math.cos(ma)).toFixed(1);
+    var ty=(O[1]-lr*Math.sin(ma)+4).toFixed(1);
+    o+='<text x="'+tx+'" y="'+ty+'" text-anchor="middle" style="font-weight:800;fill:#b45309;font-size:15px;paint-order:stroke fill;stroke:#ffffff;stroke-width:5px;stroke-linejoin:round;pointer-events:none">'+Math.round(S.th)+'°</text>';
+  } else {
+    o+='<text x="'+(O[0]+34).toFixed(1)+'" y="'+(O[1]-14).toFixed(1)+'" text-anchor="middle" style="font-weight:800;fill:#b45309;font-size:13px;paint-order:stroke fill;stroke:#ffffff;stroke-width:4px;">0° (Superpuestos)</text>';
+  }
+
   scene.innerHTML=o;
   var hp=P(0,L);
   hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
   updateCharExpression();
 }
 
-/* Panel de información matemático seguro */
+/* Panel de información */
 function info(id){
   var n=S.n,L=n+1,th=S.th,c=Math.cos(rad(th)),s=Math.sin(rad(th));
   var tipo=th===0?'nulo (0°)':th===180?'llano (180°)':th<89.5?'agudo (< 90°)':th>90.5?'obtuso (> 90°)':'recto (90°)';
@@ -161,7 +170,6 @@ function sync(){
 $('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync()});
 $('#n').addEventListener('input',function(e){S.n=+e.target.value;sync()});
 
-/* Botones rápidos incluyendo 0° y 180° */
 $('#pre').innerHTML='';
 [0, 45, 90, 135, 180].forEach(function(a){
   var b=document.createElement('button');b.textContent=a+'°';
@@ -172,19 +180,19 @@ tog('#bCurve','curve');tog('#bGrid','grid');tog('#bAnim','anim');
 $('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
 function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
 
-/* Arrastre suave con límites ampliados [0°, 180°] */
+/* Arrastre suave */
 var drag=false;
 hd.addEventListener('pointerdown',function(e){drag=true;S.anim=false;pa();hd.setPointerCapture(e.pointerId);e.preventDefault()});
 hd.addEventListener('pointermove',function(e){if(!drag)return;
   var r=svg.getBoundingClientRect(),dx=e.clientX-r.left-V.ox,dy=V.oy-(e.clientY-r.top);
   var deg=Math.atan2(dy,dx)*180/Math.PI;
-  if(deg<0){deg=dx>=0?0:180} // Suaviza el límite inferior si el puntero baja del eje
+  if(deg<0){deg=dx>=0?0:180}
   S.th=Math.max(0,Math.min(180,deg));
   sync()});
 hd.addEventListener('pointerup',function(){drag=false});
 hd.addEventListener('pointercancel',function(){drag=false});
 
-/* Animación continua de 0° a 180° */
+/* Animación */
 var dir=1,last=0;
 function loop(){last=performance.now();requestAnimationFrame(step)}
 function step(t){
@@ -196,9 +204,7 @@ function step(t){
   sync();requestAnimationFrame(step)}
 if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)$('#bAnim').hidden=true;
 
-/* ============================================================
-   TRIANGULÍN: REACCIONES A 0° Y 180°
-============================================================ */
+/* Triangulín */
 var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
 var armL=$('#arm-l'),armR=$('#arm-r'),body=$('#char-body');
 var charPos={x:75,y:75},charDrag=false,charOffset={x:0,y:0};
@@ -208,16 +214,14 @@ function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+
 function updateCharExpression(){
   var th=Math.round(S.th);
   if(th===0){
-    // Caso extremo: 0°
-    chMouth.setAttribute('d','M -6 28 L 6 28'); // Boca plana / aplastado
+    chMouth.setAttribute('d','M -6 28 L 6 28');
     chSpeech.textContent='¡Auxilio! ¡0° colapsado!';
     armL.setAttribute('d','M -24 24 Q -32 36 -20 38');
     armR.setAttribute('d','M 24 24 Q 32 36 20 38');
   } else if(th===180){
-    // Caso extremo: 180°
     chMouth.setAttribute('d','M -10 22 Q 0 34 10 22 Z');
     chSpeech.textContent='¡180°! ¡Todo recto!';
-    armL.setAttribute('d','M -24 16 L -44 16'); // Brazos totalmente abiertos en 180°
+    armL.setAttribute('d','M -24 16 L -44 16');
     armR.setAttribute('d','M 24 16 L 44 16');
   } else if(th<70){
     chMouth.setAttribute('d','M -5 27 A 5 5 0 1 0 5 27 A 5 5 0 1 0 -5 27');
