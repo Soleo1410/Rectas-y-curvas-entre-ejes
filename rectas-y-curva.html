@@ -2,17 +2,19 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>RECTAS Y CURVAS ENTRE EJES (MODELIZACIÓN DIDÁCTICA)</title>
   <style>
     :root{--bg:#eef2f7;--ink:#17214d;--mut:#5b6685;--card:#fff;--acc:#ff4d6d;--line:#d5dcea}
     *{box-sizing:border-box}
     html,body{height:100%;margin:0;overflow:hidden}
-    body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top);-webkit-tap-highlight-color:transparent}
-    header{padding:8px 16px 2px;flex-shrink:0}
-    h1{font-size:1.1rem;margin:0;letter-spacing:-.01em}
-    header p{margin:2px 0 0;font-size:.82rem;color:var(--mut)}
+    body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+    
+    header{padding:6px 14px 2px;flex-shrink:0;z-index:10;background:rgba(238,242,247,0.85);backdrop-filter:blur(4px)}
+    h1{font-size:1.05rem;margin:0;letter-spacing:-.01em}
+    header p{margin:2px 0 0;font-size:.78rem;color:var(--mut)}
 
+    /* Contenedor que ocupa todo el espacio disponible */
     .canvas-wrap{position:relative;flex:1;min-height:0;width:100%;overflow:hidden}
     #cv{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
     #cv text{font-family:inherit;font-size:11px;fill:var(--mut);pointer-events:none}
@@ -23,23 +25,22 @@
     .dim{opacity:.12}
     #hd{cursor:grab;touch-action:none}
 
-    /* Botones de Zoom flotantes */
+    /* Botones de Zoom discretos arriba a la derecha */
     .zoom-controls{
       position:absolute;
-      top:12px;
-      right:14px;
+      top:10px;
+      right:12px;
       display:flex;
       flex-direction:column;
-      gap:5px;
-      z-index:20;
+      gap:4px;
+      z-index:25;
     }
     .zoom-btn{
-      width:32px;
-      height:32px;
+      width:34px;
+      height:34px;
       padding:0;
       font-size:16px;
       font-weight:bold;
-      line-height:1;
       display:flex;
       align-items:center;
       justify-content:center;
@@ -49,70 +50,66 @@
       color:var(--ink);
       box-shadow:0 2px 6px rgba(15,23,42,0.12);
       backdrop-filter:blur(4px);
+      cursor:pointer;
     }
-    .zoom-btn:hover{background:#ffffff;border-color:#94a3b8}
+    .zoom-btn:hover{background:#ffffff}
     .zoom-btn:active{transform:scale(0.95)}
 
-    /* Panel Desplegable */
-    .bottom{
-      background:var(--card);
-      border-radius:20px 20px 0 0;
-      box-shadow:0 -6px 24px rgba(23,33,77,.12);
-      padding:4px 16px calc(10px + env(safe-area-inset-bottom));
-      flex-shrink:0;
-      transition:transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      position:relative;
-      z-index:30;
-    }
-    .bottom.collapsed{
-      transform:translateY(calc(100% - 38px));
-    }
-
-    /* Tirador / Botón de colapso */
-    .panel-toggle-bar{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:6px 0;
-      cursor:pointer;
-      user-select:none;
-    }
-    .panel-toggle-btn{
-      background:rgba(238,242,247,0.85);
-      border:1px solid var(--line);
-      font-size:0.78rem;
-      font-weight:600;
-      color:var(--mut);
-      padding:3px 14px;
+    /* Botón flotante para ocultar / mostrar controles */
+    #panelToggleBtn{
+      position:absolute;
+      bottom:12px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:40;
+      background:var(--ink);
+      color:#fff;
+      border:none;
       border-radius:999px;
+      padding:7px 18px;
+      font-size:0.82rem;
+      font-weight:600;
+      box-shadow:0 4px 14px rgba(23,33,77,0.3);
       display:flex;
       align-items:center;
       gap:6px;
-      transition:background 0.2s, color 0.2s;
+      cursor:pointer;
+      transition:transform 0.2s, background 0.2s;
     }
-    .panel-toggle-btn:hover{background:#e2e8f0;color:var(--ink)}
+    #panelToggleBtn:hover{background:#1e293b}
+    #panelToggleBtn:active{transform:translateX(-50%) scale(0.96)}
 
-    .panel-content{
-      max-height:38vh;
+    /* Panel inferior */
+    .bottom{
+      background:var(--card);
+      border-radius:20px 20px 0 0;
+      box-shadow:0 -6px 24px rgba(23,33,77,.15);
+      padding:10px 16px calc(12px + env(safe-area-inset-bottom));
+      flex-shrink:0;
+      z-index:30;
+      max-height:48vh;
       overflow-y:auto;
-      padding-top:2px;
+      transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    /* Clase que oculta el panel completamente */
+    .bottom.collapsed{
+      display:none !important;
     }
 
     .row{display:flex;align-items:center;gap:10px;margin:6px 0}
-    .row label{font-size:.85rem;color:var(--mut);min-width:76px}
-    .row output{font-weight:700;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
+    .row label{font-size:.84rem;color:var(--mut);min-width:76px}
+    .row output{font-weight:700;min-width:56px;text-align:right;font-variant-numeric:tabular-nums}
 
     .input-text{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:.88rem;color:var(--ink)}
     .color-picker{border:none;background:none;width:32px;height:32px;cursor:pointer;padding:0}
 
     input[type=range]{flex:1;accent-color:var(--acc);height:28px}
     .btns{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
-    button{font:inherit;font-size:.86rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+    button{font:inherit;font-size:.85rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
     button:focus-visible,input:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
     button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
-    .btn-sub{font-size:0.78rem;padding:5px 10px;background:#f1f5f9;border:1px dashed var(--line);color:var(--mut)}
-    .btn-sub:hover{background:#e2e8f0;color:var(--ink)}
+    .btn-sub{font-size:0.78rem;padding:4px 8px;background:#f1f5f9;border:1px dashed var(--line);color:var(--mut)}
 
     #sheet h2{font-size:1.05rem;margin:0 0 8px;display:flex;align-items:center;gap:8px}
     #sheet h2 i{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
@@ -132,8 +129,8 @@
     }
     #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
 
-    /* Globo de diálogo adaptativo HTML dentro de SVG */
-    .bubble-container{
+    /* Cuadro de diálogo HTML flexible adaptable al texto */
+    .bubble-card{
       background:#ffffff;
       border:2px solid #17214d;
       border-radius:12px;
@@ -141,13 +138,12 @@
       font-size:11px;
       font-weight:700;
       color:#17214d;
-      line-height:1.25;
-      box-shadow:0 3px 8px rgba(15,23,42,0.18);
-      word-wrap:break-word;
+      line-height:1.3;
+      box-shadow:0 4px 10px rgba(15,23,42,0.16);
+      word-break:break-word;
       white-space:normal;
       display:inline-block;
-      max-width:270px;
-      pointer-events:none;
+      max-width:280px;
     }
   </style>
 </head>
@@ -164,6 +160,11 @@
     <button class="zoom-btn" id="zoomReset" title="Restablecer tamaño" style="font-size:11px;">1:1</button>
     <button class="zoom-btn" id="zoomOut" title="Alejar (Zoom −)">−</button>
   </div>
+
+  <!-- Botón Flotante para Alternar Panel -->
+  <button id="panelToggleBtn">
+    <span id="panelToggleText">Ocultar controles</span> <span id="panelToggleIcon">▼</span>
+  </button>
 
   <svg id="cv" role="img" aria-label="Ejes cartesianos y rectas envolventes">
     <defs>
@@ -192,7 +193,7 @@
     <g id="scene"></g>
     <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
     
-    <!-- Personaje Triángulo Realista / 3D -->
+    <!-- Personaje Triángulo -->
     <g id="char" transform="translate(80, 80)" style="cursor: grab;">
       <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
       <g id="char-feet">
@@ -215,11 +216,11 @@
       <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
       <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
       
-      <!-- Globo de diálogo inteligente autoadaptable -->
+      <!-- Globo de diálogo adaptable -->
       <g id="bubble" transform="translate(24, -68)">
         <polygon points="4,32 -6,40 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.5"/>
-        <foreignObject x="0" y="-10" width="280" height="90">
-          <div xmlns="http://www.w3.org/1999/xhtml" id="char-speech" class="bubble-container">
+        <foreignObject x="0" y="-12" width="290" height="96">
+          <div xmlns="http://www.w3.org/1999/xhtml" id="char-speech" class="bubble-card">
             ¡Hola! Investigemos juntos
           </div>
         </foreignObject>
@@ -228,60 +229,51 @@
   </svg>
 </div>
 
-<!-- Panel de Control Desplegable -->
+<!-- Panel de Control Inferior -->
 <section class="bottom" id="ctrl">
-  <!-- Pestaña para abrir/cerrar panel -->
-  <div class="panel-toggle-bar" id="panelToggle">
-    <div class="panel-toggle-btn" id="panelToggleText">
-      <span>Ocultar controles</span> <span id="panelToggleIcon">▾</span>
+  <div class="row">
+    <label for="th">Ángulo</label>
+    <input id="th" type="range" min="0" max="180" step="1" value="90">
+    <output id="thv">90°</output>
+  </div>
+  
+  <div class="btns" id="pre"></div>
+
+  <div class="row">
+    <label for="visibleLines">Hilos activos</label>
+    <input id="visibleLines" type="range" min="0" max="50" step="1" value="10">
+    <output id="lineCountVal">10 / 50</output>
+  </div>
+
+  <div class="btns">
+    <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
+    <button class="chip" id="bStepReset">Reiniciar tejido</button>
+  </div>
+
+  <div class="row">
+    <label>Cuadrantes</label>
+    <div class="btns" id="quadBtns" style="margin:0;">
+      <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
+      <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
+      <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
+      <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
+      <button class="btn-sub" id="qAll">Todos</button>
+      <button class="btn-sub" id="qClear">Ninguno</button>
     </div>
   </div>
 
-  <div class="panel-content">
-    <div class="row">
-      <label for="th">Ángulo</label>
-      <input id="th" type="range" min="0" max="180" step="1" value="90">
-      <output id="thv">90°</output>
-    </div>
-    
-    <div class="btns" id="pre"></div>
+  <div class="btns">
+    <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
+    <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
+    <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
+    <button class="chip" id="bReset">Restablecer colores</button>
+  </div>
 
-    <div class="row">
-      <label for="visibleLines">Hilos activos</label>
-      <input id="visibleLines" type="range" min="0" max="50" step="1" value="10">
-      <output id="lineCountVal">10 / 50</output>
-    </div>
-
-    <div class="btns">
-      <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
-      <button class="chip" id="bStepReset">Reiniciar tejido</button>
-    </div>
-
-    <div class="row">
-      <label>Cuadrantes</label>
-      <div class="btns" id="quadBtns" style="margin:0;">
-        <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
-        <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
-        <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
-        <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
-        <button class="btn-sub" id="qAll">Todos</button>
-        <button class="btn-sub" id="qClear">Ninguno</button>
-      </div>
-    </div>
-
-    <div class="btns">
-      <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
-      <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
-      <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
-      <button class="chip" id="bReset">Restablecer colores</button>
-    </div>
-
-    <div class="row char-settings">
-      <label for="triName">Nombre:</label>
-      <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">
-      <label for="triColor" style="min-width:auto;margin-left:8px;">Color 3D:</label>
-      <input type="color" id="triColor" value="#2563eb" class="color-picker">
-    </div>
+  <div class="row char-settings">
+    <label for="triName">Nombre:</label>
+    <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">
+    <label for="triColor" style="min-width:auto;margin-left:8px;">Color 3D:</label>
+    <input type="color" id="triColor" value="#2563eb" class="color-picker">
   </div>
 </section>
 
@@ -302,7 +294,7 @@ var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
   n:50,              // Capacidad máxima de hilos
-  visibleLines:10,   // Cantidad inicial
+  visibleLines:10,   // Inicio con 10 hilos
   stepPlaying:false,
   stepTimer:null,
   zoom:1.0,
@@ -343,7 +335,8 @@ function name(id){
 
 function render(){
   var w=svg.clientWidth,h=svg.clientHeight;if(!w||!h)return;
-  var n=S.n,L=n+1;
+  // L toma el tamaño de los hilos activos para que los ejes siempre queden centrados y proporcionados
+  var n=Math.max(10, S.visibleLines), L=n+1;
   var c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
 
   var xCorners=[-L-L*c, -L+L*c, L-L*c, L+L*c];
@@ -351,10 +344,11 @@ function render(){
   var spanX=Math.max(2*L, maxX-minX);
   var spanY=Math.max(2*L*Math.abs(s), 14);
 
-  var M=40;
+  var M=30;
   var scX=(w-2*M)/spanX;
-  var scY=(h-2*M-24)/spanY;
+  var scY=(h-2*M-20)/spanY;
   
+  // Escala centrada en la pantalla del dispositivo
   var sc=Math.min(scX,scY) * S.zoom;
   V.sc=sc;
   V.ox=w/2;
@@ -396,7 +390,7 @@ function render(){
   /* 2. CUADRÍCULA */
   if(S.grid && s>0.04){
     var g='';
-    var step=n>20?5:1;
+    var step=n>25?5:n>12?2:1;
     for(var k=-n;k<=n;k+=step){
       g+=seg(P(k,-n),P(k,n));
       g+=seg(P(-n,k),P(n,k));
@@ -472,8 +466,8 @@ function render(){
   o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
-  /* 6. MARCAS Y NÚMEROS EN EJES */
-  var st=n>24?5:n>13?2:1;
+  /* 6. MARCAS Y NÚMEROS EN EJES (Espaciado inteligente) */
+  var st=n>25?5:n>12?2:1;
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
     var px=P(m,0), py=P(0,m);
@@ -499,7 +493,7 @@ function render(){
 }
 
 function info(id){
-  var n=S.n, th=Math.round(S.th), L=n+1;
+  var n=Math.max(10, S.visibleLines), th=Math.round(S.th), L=n+1;
   if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal (−'+n+' a +'+n+').</p>';
   if(id==='ey')return '<p><b>Eje Y:</b> Eje móvil a '+th+'° con el semieje +X y '+(180-th)+'° con el semieje −X.</p>';
   if(id.indexOf('curve')===0){
@@ -563,7 +557,7 @@ function sync(){
 }
 $('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync();updateCharExpression()});
 
-/* Tejido progresivo rápido */
+/* Tejido rápido */
 $('#visibleLines').addEventListener('input',function(e){
   stopStepPlay();
   S.visibleLines=+e.target.value;
@@ -584,7 +578,7 @@ $('#bStepPlay').onclick=function(){
       } else {
         stopStepPlay();
       }
-    }, 120); // Velocidad fluida
+    }, 100);
   }
 };
 
@@ -687,10 +681,10 @@ function step(t){
   requestAnimationFrame(step);
 }
 
-/* Personaje Triángulo */
+/* Personaje */
 var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
 var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
-var charPos={x:80,y:80},charDrag=false,charOffset={x:0,y:0};
+var charPos={x:70,y:70},charDrag=false,charOffset={x:0,y:0};
 
 function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+')')}
 
@@ -745,22 +739,44 @@ ch.addEventListener('pointerdown',function(e){
 ch.addEventListener('pointermove',function(e){
   if(!charDrag)return;
   var r=svg.getBoundingClientRect();
-  charPos.x=Math.max(50,Math.min(r.width-50,(e.clientX-r.left)-charOffset.x));
-  charPos.y=Math.max(50,Math.min(r.height-50,(e.clientY-r.top)-charOffset.y));
+  charPos.x=Math.max(40,Math.min(r.width-40,(e.clientX-r.left)-charOffset.x));
+  charPos.y=Math.max(40,Math.min(r.height-40,(e.clientY-r.top)-charOffset.y));
   updateCharPos();
 });
 
 ch.addEventListener('pointerup',function(){charDrag=false});
 ch.addEventListener('pointercancel',function(){charDrag=false});
 
-/* Lógica del panel plegable/desplegable */
+/* LÓGICA DE OCULTAR / MOSTRAR CONTROLES CON RE-CENTRADO */
 var panelOpen=true;
-$('#panelToggle').onclick=function(){
+var toggleBtn=$('#panelToggleBtn');
+var ctrlPanel=$('#ctrl');
+
+toggleBtn.addEventListener('click',function(e){
+  e.preventDefault();
+  e.stopPropagation();
   panelOpen=!panelOpen;
-  $('#ctrl').classList.toggle('collapsed', !panelOpen);
-  $('#panelToggleText').innerHTML=panelOpen ? '<span>Ocultar controles</span> <span>▾</span>' : '<span>Mostrar controles</span> <span>▴</span>';
-  setTimeout(render, 320); // Recalcula el tamaño del plano al desplegar o plegar
-};
+  
+  if(panelOpen){
+    ctrlPanel.classList.remove('collapsed');
+    $('#panelToggleText').textContent='Ocultar controles';
+    $('#panelToggleIcon').textContent='▼';
+    toggleBtn.style.bottom='12px';
+  } else {
+    ctrlPanel.classList.add('collapsed');
+    $('#panelToggleText').textContent='Mostrar controles';
+    $('#panelToggleIcon').textContent='▲';
+    toggleBtn.style.bottom='14px';
+  }
+
+  // Fuerza al navegador a recalcular el tamaño y re-centrar el plano
+  setTimeout(function(){
+    render();
+  }, 50);
+  setTimeout(function(){
+    render();
+  }, 200);
+});
 
 var bob=0;
 setInterval(function(){

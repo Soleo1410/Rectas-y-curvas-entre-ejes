@@ -2,8 +2,8 @@
 var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
-  n:50,              // Capacidad máxima de hilos
-  visibleLines:10,   // Cantidad inicial
+  n:10,
+  visibleLines:1,
   stepPlaying:false,
   stepTimer:null,
   zoom:1.0,
@@ -44,7 +44,7 @@ function name(id){
 
 function render(){
   var w=svg.clientWidth,h=svg.clientHeight;if(!w||!h)return;
-  var n=S.n,L=n+1;
+  var n=Math.max(10, S.visibleLines), L=n+1;
   var c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
 
   var xCorners=[-L-L*c, -L+L*c, L-L*c, L+L*c];
@@ -52,9 +52,9 @@ function render(){
   var spanX=Math.max(2*L, maxX-minX);
   var spanY=Math.max(2*L*Math.abs(s), 14);
 
-  var M=40;
+  var M=30;
   var scX=(w-2*M)/spanX;
-  var scY=(h-2*M-24)/spanY;
+  var scY=(h-2*M-20)/spanY;
   
   var sc=Math.min(scX,scY) * S.zoom;
   V.sc=sc;
@@ -97,7 +97,7 @@ function render(){
   /* 2. CUADRÍCULA */
   if(S.grid && s>0.04){
     var g='';
-    var step=n>20?5:1;
+    var step=n>25?5:n>12?2:1;
     for(var k=-n;k<=n;k+=step){
       g+=seg(P(k,-n),P(k,n));
       g+=seg(P(-n,k),P(n,k));
@@ -174,7 +174,7 @@ function render(){
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
   /* 6. MARCAS Y NÚMEROS EN EJES */
-  var st=n>24?5:n>13?2:1;
+  var st=n>25?5:n>12?2:1;
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
     var px=P(m,0), py=P(0,m);
@@ -200,7 +200,7 @@ function render(){
 }
 
 function info(id){
-  var n=S.n, th=Math.round(S.th), L=n+1;
+  var n=Math.max(10, S.visibleLines), th=Math.round(S.th), L=n+1;
   if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal (−'+n+' a +'+n+').</p>';
   if(id==='ey')return '<p><b>Eje Y:</b> Eje móvil a '+th+'° con el semieje +X y '+(180-th)+'° con el semieje −X.</p>';
   if(id.indexOf('curve')===0){
@@ -264,7 +264,6 @@ function sync(){
 }
 $('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync();updateCharExpression()});
 
-/* Tejido progresivo rápido */
 $('#visibleLines').addEventListener('input',function(e){
   stopStepPlay();
   S.visibleLines=+e.target.value;
@@ -285,7 +284,7 @@ $('#bStepPlay').onclick=function(){
       } else {
         stopStepPlay();
       }
-    }, 120);
+    }, 100);
   }
 };
 
@@ -388,10 +387,9 @@ function step(t){
   requestAnimationFrame(step);
 }
 
-/* Personaje Triángulo */
 var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
 var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
-var charPos={x:80,y:80},charDrag=false,charOffset={x:0,y:0};
+var charPos={x:70,y:70},charDrag=false,charOffset={x:0,y:0};
 
 function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+')')}
 
@@ -446,22 +444,42 @@ ch.addEventListener('pointerdown',function(e){
 ch.addEventListener('pointermove',function(e){
   if(!charDrag)return;
   var r=svg.getBoundingClientRect();
-  charPos.x=Math.max(50,Math.min(r.width-50,(e.clientX-r.left)-charOffset.x));
-  charPos.y=Math.max(50,Math.min(r.height-50,(e.clientY-r.top)-charOffset.y));
+  charPos.x=Math.max(40,Math.min(r.width-40,(e.clientX-r.left)-charOffset.x));
+  charPos.y=Math.max(40,Math.min(r.height-40,(e.clientY-r.top)-charOffset.y));
   updateCharPos();
 });
 
 ch.addEventListener('pointerup',function(){charDrag=false});
 ch.addEventListener('pointercancel',function(){charDrag=false});
 
-/* Lógica del panel plegable/desplegable */
 var panelOpen=true;
-$('#panelToggle').onclick=function(){
+var toggleBtn=$('#panelToggleBtn');
+var ctrlPanel=$('#ctrl');
+
+toggleBtn.addEventListener('click',function(e){
+  e.preventDefault();
+  e.stopPropagation();
   panelOpen=!panelOpen;
-  $('#ctrl').classList.toggle('collapsed', !panelOpen);
-  $('#panelToggleText').innerHTML=panelOpen ? '<span>Ocultar controles</span> <span>▾</span>' : '<span>Mostrar controles</span> <span>▴</span>';
-  setTimeout(render, 320);
-};
+  
+  if(panelOpen){
+    ctrlPanel.classList.remove('collapsed');
+    $('#panelToggleText').textContent='Ocultar controles';
+    $('#panelToggleIcon').textContent='▼';
+    toggleBtn.style.bottom='12px';
+  } else {
+    ctrlPanel.classList.add('collapsed');
+    $('#panelToggleText').textContent='Mostrar controles';
+    $('#panelToggleIcon').textContent='▲';
+    toggleBtn.style.bottom='14px';
+  }
+
+  setTimeout(function(){
+    render();
+  }, 50);
+  setTimeout(function(){
+    render();
+  }, 200);
+});
 
 var bob=0;
 setInterval(function(){

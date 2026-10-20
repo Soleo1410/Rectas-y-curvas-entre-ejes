@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>RECTAS Y CURVAS ENTRE EJES (MODELIZACIÓN DIDÁCTICA)</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
   <link rel="stylesheet" href="estilos.css">
@@ -14,12 +14,15 @@
 </header>
 
 <div class="canvas-wrap">
-  <!-- Botones de Zoom flotantes -->
   <div class="zoom-controls">
     <button class="zoom-btn" id="zoomIn" title="Acercar (Zoom +)">+</button>
     <button class="zoom-btn" id="zoomReset" title="Restablecer tamaño" style="font-size:11px;">1:1</button>
     <button class="zoom-btn" id="zoomOut" title="Alejar (Zoom −)">−</button>
   </div>
+
+  <button id="panelToggleBtn">
+    <span id="panelToggleText">Ocultar controles</span> <span id="panelToggleIcon">▼</span>
+  </button>
 
   <svg id="cv" role="img" aria-label="Ejes cartesianos y rectas envolventes">
     <defs>
@@ -48,7 +51,6 @@
     <g id="scene"></g>
     <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
     
-    <!-- Personaje Triángulo Realista / 3D -->
     <g id="char" transform="translate(80, 80)" style="cursor: grab;">
       <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
       <g id="char-feet">
@@ -71,11 +73,10 @@
       <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
       <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
       
-      <!-- Globo de diálogo adaptativo HTML dentro de SVG -->
       <g id="bubble" transform="translate(24, -68)">
         <polygon points="4,32 -6,40 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.5"/>
-        <foreignObject x="0" y="-10" width="280" height="90">
-          <div xmlns="http://www.w3.org/1999/xhtml" id="char-speech" class="bubble-container">
+        <foreignObject x="0" y="-12" width="290" height="96">
+          <div xmlns="http://www.w3.org/1999/xhtml" id="char-speech" class="bubble-card">
             ¡Hola! Investigemos juntos
           </div>
         </foreignObject>
@@ -84,60 +85,50 @@
   </svg>
 </div>
 
-<!-- Panel de Control Desplegable -->
 <section class="bottom" id="ctrl">
-  <!-- Pestaña para abrir/cerrar panel -->
-  <div class="panel-toggle-bar" id="panelToggle">
-    <div class="panel-toggle-btn" id="panelToggleText">
-      <span>Ocultar controles</span> <span id="panelToggleIcon">▾</span>
+  <div class="row">
+    <label for="th">Ángulo</label>
+    <input id="th" type="range" min="0" max="180" step="1" value="90">
+    <output id="thv">90°</output>
+  </div>
+  
+  <div class="btns" id="pre"></div>
+
+  <div class="row">
+    <label for="visibleLines">Hilos activos</label>
+    <input id="visibleLines" type="range" min="0" max="50" step="1" value="10">
+    <output id="lineCountVal">10 / 50</output>
+  </div>
+
+  <div class="btns">
+    <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
+    <button class="chip" id="bStepReset">Reiniciar tejido</button>
+  </div>
+
+  <div class="row">
+    <label>Cuadrantes</label>
+    <div class="btns" id="quadBtns" style="margin:0;">
+      <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
+      <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
+      <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
+      <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
+      <button class="btn-sub" id="qAll">Todos</button>
+      <button class="btn-sub" id="qClear">Ninguno</button>
     </div>
   </div>
 
-  <div class="panel-content">
-    <div class="row">
-      <label for="th">Ángulo</label>
-      <input id="th" type="range" min="0" max="180" step="1" value="90">
-      <output id="thv">90°</output>
-    </div>
-    
-    <div class="btns" id="pre"></div>
+  <div class="btns">
+    <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
+    <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
+    <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
+    <button class="chip" id="bReset">Restablecer colores</button>
+  </div>
 
-    <div class="row">
-      <label for="visibleLines">Hilos activos</label>
-      <input id="visibleLines" type="range" min="0" max="50" step="1" value="10">
-      <output id="lineCountVal">10 / 50</output>
-    </div>
-
-    <div class="btns">
-      <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
-      <button class="chip" id="bStepReset">Reiniciar tejido</button>
-    </div>
-
-    <div class="row">
-      <label>Cuadrantes</label>
-      <div class="btns" id="quadBtns" style="margin:0;">
-        <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
-        <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
-        <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
-        <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
-        <button class="btn-sub" id="qAll">Todos</button>
-        <button class="btn-sub" id="qClear">Ninguno</button>
-      </div>
-    </div>
-
-    <div class="btns">
-      <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
-      <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
-      <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
-      <button class="chip" id="bReset">Restablecer colores</button>
-    </div>
-
-    <div class="row char-settings">
-      <label for="triName">Nombre:</label>
-      <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">
-      <label for="triColor" style="min-width:auto;margin-left:8px;">Color 3D:</label>
-      <input type="color" id="triColor" value="#2563eb" class="color-picker">
-    </div>
+  <div class="row char-settings">
+    <label for="triName">Nombre:</label>
+    <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">
+    <label for="triColor" style="min-width:auto;margin-left:8px;">Color 3D:</label>
+    <input type="color" id="triColor" value="#2563eb" class="color-picker">
   </div>
 </section>
 
