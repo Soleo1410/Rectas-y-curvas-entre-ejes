@@ -2,7 +2,7 @@
 var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
-  n:10,
+  n:50,
   visibleLines:10,
   stepPlaying:false,
   stepTimer:null,
@@ -284,7 +284,7 @@ $('#bStepPlay').onclick=function(){
       } else {
         stopStepPlay();
       }
-    },550);
+    },120);
   }
 };
 
