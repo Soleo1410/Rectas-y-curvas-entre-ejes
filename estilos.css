@@ -6,28 +6,61 @@ header{padding:10px 16px 2px}
 h1{font-size:1.1rem;margin:0;letter-spacing:-.01em}
 header p{margin:2px 0 0;font-size:.82rem;color:var(--mut)}
 
-#cv{flex:1;min-height:0;width:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.canvas-wrap{position:relative;flex:1;min-height:0;width:100%;overflow:hidden}
+#cv{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
 #cv text{font-family:inherit;font-size:11px;fill:var(--mut);pointer-events:none}
-#cv .quad-label{font-size:13px;font-weight:700;fill:#94a3b8;opacity:0.65;letter-spacing:0.5px}
+#cv .quad-label{font-size:13px;font-weight:700;fill:#94a3b8;opacity:0.45;transition:opacity 0.2s, fill 0.2s}
+#cv .quad-label.quad-active{fill:#334155;opacity:0.95}
 #cv .hit{stroke:transparent;stroke-width:20;fill:none;stroke-linecap:round;cursor:pointer}
 #cv .vis{fill:none;stroke-linecap:round;pointer-events:none}
 .dim{opacity:.12}
 #hd{cursor:grab;touch-action:none}
+
+.zoom-controls{
+  position:absolute;
+  top:12px;
+  right:14px;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  z-index:20;
+}
+.zoom-btn{
+  width:32px;
+  height:32px;
+  padding:0;
+  font-size:16px;
+  font-weight:bold;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,0.92);
+  color:var(--ink);
+  box-shadow:0 2px 6px rgba(15,23,42,0.12);
+  backdrop-filter:blur(4px);
+}
+.zoom-btn:hover{background:#ffffff;border-color:#94a3b8}
+.zoom-btn:active{transform:scale(0.95)}
 
 .bottom{background:var(--card);border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(23,33,77,.12);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
 .row{display:flex;align-items:center;gap:10px;margin:6px 0}
 .row label{font-size:.85rem;color:var(--mut);min-width:68px}
 .row output{font-weight:700;min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
 
-.input-select{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:.88rem;color:var(--ink);cursor:pointer}
 .input-text{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:.88rem;color:var(--ink)}
 .color-picker{border:none;background:none;width:32px;height:32px;cursor:pointer;padding:0}
 
 input[type=range]{flex:1;accent-color:var(--acc);height:28px}
 .btns{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
 button{font:inherit;font-size:.86rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 13px;cursor:pointer}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
+button:focus-visible,input:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
 button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.btn-sub{font-size:0.78rem;padding:5px 10px;background:#f1f5f9;border:1px dashed var(--line);color:var(--mut)}
+.btn-sub:hover{background:#e2e8f0;color:var(--ink)}
 
 #sheet h2{font-size:1.05rem;margin:0 0 8px;display:flex;align-items:center;gap:8px}
 #sheet h2 i{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
@@ -37,7 +70,6 @@ button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink
 .sw button.c{width:34px;height:34px;padding:0;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
 [hidden]{display:none!important}
 
-/* Estilos 3D y animación del personaje */
 #char{transition:transform 0.05s ease-out;user-select:none}
 #char:active{cursor:grabbing !important}
 #char-base{transition:fill 0.3s ease}
@@ -46,26 +78,3 @@ button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink
   95%{transform:scaleY(0.1)}
 }
 #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
-/* Botones de acción rápida para cuadrantes */
-.btn-sub {
-  font-size: 0.78rem;
-  padding: 5px 10px;
-  background: #f1f5f9;
-  border: 1px dashed var(--line);
-  color: var(--mut);
-}
-.btn-sub:hover {
-  background: #e2e8f0;
-  color: var(--ink);
-}
-.quad-label {
-  font-size: 13px;
-  font-weight: 700;
-  fill: #94a3b8;
-  opacity: 0.45;
-  transition: opacity 0.2s, fill 0.2s;
-}
-.quad-label.quad-active {
-  fill: #334155;
-  opacity: 0.95;
-}
