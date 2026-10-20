@@ -3,38 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RECTAS Y CURVAS ENTRE EJES (COMPLETO 4 CUADRANTES)</title>
+  <title>RECTAS Y CURVAS ENTRE EJES (4 CUADRANTES)</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
   <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
 <header>
-  <h1>RECTAS Y CURVAS EN LOS 4 CUADRANTES</h1>
-  <p>Ejes positivos y negativos. Cambiá el ángulo, cuadrantes y el aspecto del personaje.</p>
+  <h1>RECTAS Y CURVAS EN LOS CUADRANTES</h1>
+  <p>Compara el comportamiento de las curvas y los ángulos entre diferentes cuadrantes.</p>
 </header>
 
 <svg id="cv" role="img" aria-label="Ejes cartesianos y rectas envolventes">
-  <!-- Filtros y Gradientes para efecto 3D del personaje -->
   <defs>
     <filter id="shadow3d" x="-30%" y="-30%" width="160%" height="160%">
       <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.35"/>
     </filter>
-    
     <linearGradient id="bodyGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="0.15"/>
     </linearGradient>
-
     <linearGradient id="bodyGradRight" x1="100%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#000000" stop-opacity="0.1"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
     </linearGradient>
-
     <linearGradient id="bodyGradBottom" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
       <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
     </linearGradient>
-
     <radialGradient id="eyeGrad" cx="35%" cy="35%" r="65%">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="80%" stop-color="#cbd5e1"/>
@@ -47,50 +42,30 @@
   
   <!-- Personaje Triángulo Realista / 3D -->
   <g id="char" transform="translate(80, 80)" style="cursor: grab;">
-    <!-- Sombra proyectada en el suelo -->
     <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
-
-    <!-- Patas 3D -->
     <g id="char-feet">
       <ellipse id="foot-l" cx="-16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
       <ellipse id="foot-r" cx="16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
     </g>
-
-    <!-- Manitos 3D -->
     <path id="arm-l" d="M -24 16 Q -42 12 -34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
     <path id="arm-r" d="M 24 16 Q 42 12 34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
-    
-    <!-- Cuerpo Prisma Triangular 3D (Cara Base, Faceta Izquierda, Faceta Derecha, Borde Bisel) -->
     <g id="char-body-group" filter="url(#shadow3d)">
-      <!-- Base coloreada -->
       <polygon id="char-base" points="0,-40 -40,38 40,38" fill="#2563eb" stroke="#1e3a8a" stroke-width="2.5" stroke-linejoin="round"/>
-      <!-- Faceta de luz (izquierda) -->
       <polygon points="0,-40 -40,38 0,38" fill="url(#bodyGradLeft)"/>
-      <!-- Faceta de sombra (derecha) -->
       <polygon points="0,-40 0,38 40,38" fill="url(#bodyGradRight)"/>
-      <!-- Sombra inferior -->
       <polygon points="-40,38 40,38 0,30" fill="url(#bodyGradBottom)"/>
     </g>
-    
-    <!-- Ojos esféricos con brillo 3D -->
     <ellipse cx="-11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
     <ellipse cx="11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
-    
-    <!-- Pupilas -->
     <circle id="pupil-l" cx="-10" cy="7" r="3.5" fill="#0f172a"/>
     <circle id="pupil-r" cx="12" cy="7" r="3.5" fill="#0f172a"/>
-    <!-- Brillo especular -->
     <circle cx="-12" cy="4" r="1.5" fill="#ffffff"/>
     <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
-    
-    <!-- Boca -->
     <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
-    
-    <!-- Bocadillo / Globo de diálogo con nombre dinámico -->
     <g id="bubble" transform="translate(24, -54)">
-      <rect rx="9" ry="9" width="140" height="32" fill="#ffffff" stroke="#17214d" stroke-width="1.8" filter="url(#shadow3d)"/>
+      <rect rx="9" ry="9" width="150" height="32" fill="#ffffff" stroke="#17214d" stroke-width="1.8" filter="url(#shadow3d)"/>
       <polygon points="4,24 -6,31 12,24" fill="#ffffff"/>
-      <text id="char-speech" x="70" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#17214d">¡Hola!</text>
+      <text id="char-speech" x="75" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#17214d">¡Hola!</text>
     </g>
   </g>
 </svg>
@@ -110,16 +85,17 @@
     <output id="nv">10</output>
   </div>
 
-  <!-- Selector de Cuadrantes para ver el comportamiento en los negativos -->
+  <!-- Selección individual o combinada de cuadrantes -->
   <div class="row">
-    <label for="selQuad">Cuadrante</label>
-    <select id="selQuad" class="input-select">
-      <option value="I">Cuadrante I (+X, +Y)</option>
-      <option value="II">Cuadrante II (−X, +Y)</option>
-      <option value="III">Cuadrante III (−X, −Y)</option>
-      <option value="IV">Cuadrante IV (+X, −Y)</option>
-      <option value="ALL">Todos los cuadrantes</option>
-    </select>
+    <label>Cuadrantes</label>
+    <div class="btns" id="quadBtns" style="margin:0;">
+      <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
+      <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
+      <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
+      <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
+      <button class="btn-sub" id="qAll">Todos</button>
+      <button class="btn-sub" id="qClear">Ninguno</button>
+    </div>
   </div>
 
   <div class="btns">
@@ -129,7 +105,6 @@
     <button class="chip" id="bReset">Restablecer colores</button>
   </div>
 
-  <!-- Personalización del Triángulo: Nombre y Color -->
   <div class="row char-settings">
     <label for="triName">Nombre:</label>
     <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">

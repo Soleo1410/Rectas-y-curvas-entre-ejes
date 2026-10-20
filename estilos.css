@@ -46,3 +46,26 @@ button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink
   95%{transform:scaleY(0.1)}
 }
 #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
+/* Botones de acción rápida para cuadrantes */
+.btn-sub {
+  font-size: 0.78rem;
+  padding: 5px 10px;
+  background: #f1f5f9;
+  border: 1px dashed var(--line);
+  color: var(--mut);
+}
+.btn-sub:hover {
+  background: #e2e8f0;
+  color: var(--ink);
+}
+.quad-label {
+  font-size: 13px;
+  font-weight: 700;
+  fill: #94a3b8;
+  opacity: 0.45;
+  transition: opacity 0.2s, fill 0.2s;
+}
+.quad-label.quad-active {
+  fill: #334155;
+  opacity: 0.95;
+}

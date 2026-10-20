@@ -3,7 +3,7 @@ var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
   n:10,
-  quad:'I', // 'I', 'II', 'III', 'IV' o 'ALL'
+  quads:{I:true, II:false, III:true, IV:false}, // Seleccionables de forma independiente (ej: I y III activos por defecto)
   curve:true,
   grid:true,
   anim:false,
@@ -16,11 +16,10 @@ var S={
 
 var svg=$('#cv'),scene=$('#scene'),hd=$('#hd'),V={ox:0,oy:0,sc:1};
 var rad=function(d){return d*Math.PI/180};
-var f=function(v){return String(+v.toFixed(2)).replace('.',',')};
 
-/* Colores */
+/* Colores y paleta */
 var DEF={ex:'#1d4ed8',ey:'#0f766e',curve:'#ff4d6d',ang:'#f59e0b'};
-var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Curva Envolvente',ang:'Ángulo entre ejes'};
+var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Curva Envolvente',ang:'Ángulo'};
 var PAL=['#1d4ed8','#0f766e','#16a34a','#f59e0b','#ff4d6d','#c026d3','#7c3aed','#17214d'];
 
 function isLine(id){return /^l_\w+_\d+$/.test(id)}
@@ -39,7 +38,7 @@ function render(){
   var n=S.n,L=n+1;
   var c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
 
-  /* Escalado simétrico para contemplar semi-ejes positivos y negativos (-L a +L) */
+  /* Escalado simétrico para -L a +L */
   var xCorners=[-L-L*c, -L+L*c, L-L*c, L+L*c];
   var minX=Math.min.apply(null,xCorners), maxX=Math.max.apply(null,xCorners);
   var spanX=Math.max(2*L, maxX-minX);
@@ -47,11 +46,10 @@ function render(){
 
   var M=40;
   var scX=(w-2*M)/spanX;
-  var scY=(h-2*M-20)/spanY;
+  var scY=(h-2*M-24)/spanY;
   var sc=Math.min(scX,scY);
   V.sc=sc;
 
-  // El origen (0,0) centrado
   V.ox=w/2;
   V.oy=h/2;
 
@@ -70,14 +68,15 @@ function render(){
 
   /* 1. ETIQUETAS DE CUADRANTES */
   var qDist=L*0.65;
-  var quads=[
-    {name:'Cuadrante I (+,+)',pos:P(qDist,qDist)},
-    {name:'Cuadrante II (−,+)',pos:P(-qDist,qDist)},
-    {name:'Cuadrante III (−,−)',pos:P(-qDist,-qDist)},
-    {name:'Cuadrante IV (+,−)',pos:P(qDist,-qDist)}
+  var quadsInfo=[
+    {id:'I', name:'Cuadrante I (+,+)', pos:P(qDist,qDist)},
+    {id:'II', name:'Cuadrante II (−,+)', pos:P(-qDist,qDist)},
+    {id:'III', name:'Cuadrante III (−,−)', pos:P(-qDist,-qDist)},
+    {id:'IV', name:'Cuadrante IV (+,−)', pos:P(qDist,-qDist)}
   ];
-  quads.forEach(function(qd){
-    o+='<text x="'+qd.pos[0].toFixed(1)+'" y="'+qd.pos[1].toFixed(1)+'" class="quad-label" text-anchor="middle">'+qd.name+'</text>';
+  quadsInfo.forEach(function(qd){
+    var activeClass=S.quads[qd.id]?' quad-active':'';
+    o+='<text x="'+qd.pos[0].toFixed(1)+'" y="'+qd.pos[1].toFixed(1)+'" class="quad-label'+activeClass+'" text-anchor="middle">'+qd.name+'</text>';
   });
 
   /* 2. CUADRÍCULA EN LOS 4 CUADRANTES */
@@ -91,24 +90,26 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
-  /* 3. RECTAS POR CUADRANTE */
-  var activeQuads=S.quad==='ALL'?['I','II','III','IV']:[S.quad];
+  /* 3. RECTAS Y CURVAS POR CADA CUADRANTE SELECCIONADO */
   var quadSigns={
-    'I':{sx:1,sy:1},
-    'II':{sx:-1,sy:1},
-    'III':{sx:-1,sy:-1},
-    'IV':{sx:1,sy:-1}
+    'I':{sx:1,sy:1,angle:Math.round(S.th)},
+    'II':{sx:-1,sy:1,angle:Math.round(180-S.th)},
+    'III':{sx:-1,sy:-1,angle:Math.round(S.th)},
+    'IV':{sx:1,sy:-1,angle:Math.round(180-S.th)}
   };
 
-  activeQuads.forEach(function(qKey){
+  Object.keys(S.quads).forEach(function(qKey){
+    if(!S.quads[qKey]) return;
     var sx=quadSigns[qKey].sx;
     var sy=quadSigns[qKey].sy;
+
+    // Rectas
     for(var j=1;j<=n;j++){
       var id='l_'+qKey+'_'+j;
       o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 2);
     }
 
-    /* 4. CURVA ENVOLVENTE EN EL CUADRANTE */
+    // Curva envolvente
     if(S.curve){
       var dCurve='';
       for(var i=0;i<=80;i++){
@@ -120,65 +121,82 @@ function render(){
     }
   });
 
+  /* 4. SECTORES ANGULARES DINÁMICOS PARA COMPARAR */
+  var r=Math.min(46, sc*L*0.3);
+  var O=P(0,0);
+
+  // Cuadrante I
+  if(S.quads.I && S.th>1){
+    var pX=P(r/sc, 0), pY=P(0, r/sc);
+    var midA=rad(S.th/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pX)+'A'+r+','+r+' 0 0 0 '+pt(pY)+'Z" fill="#f59e0b" fill-opacity="0.35" stroke="#f59e0b" stroke-width="1.8"/>';
+    var tx=O[0]+(r+20)*Math.cos(midA), ty=O[1]-(r+20)*Math.sin(midA);
+    o+='<text x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#b45309">'+Math.round(S.th)+'°</text>';
+  }
+  // Cuadrante II
+  if(S.quads.II && S.th<179){
+    var pXm=P(-r/sc, 0), pY=P(0, r/sc);
+    var midA_II=rad(180 - (180-S.th)/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pY)+'A'+r+','+r+' 0 0 0 '+pt(pXm)+'Z" fill="#8b5cf6" fill-opacity="0.3" stroke="#8b5cf6" stroke-width="1.8"/>';
+    var tx2=O[0]+(r+20)*Math.cos(midA_II), ty2=O[1]-(r+20)*Math.sin(midA_II);
+    o+='<text x="'+tx2.toFixed(1)+'" y="'+ty2.toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#6d28d9">'+Math.round(180-S.th)+'°</text>';
+  }
+  // Cuadrante III
+  if(S.quads.III && S.th>1){
+    var pXm=P(-r/sc, 0), pYm=P(0, -r/sc);
+    var midA_III=rad(180 + S.th/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pXm)+'A'+r+','+r+' 0 0 0 '+pt(pYm)+'Z" fill="#06b6d4" fill-opacity="0.3" stroke="#06b6d4" stroke-width="1.8"/>';
+    var tx3=O[0]+(r+20)*Math.cos(midA_III), ty3=O[1]-(r+20)*Math.sin(midA_III);
+    o+='<text x="'+tx3.toFixed(1)+'" y="'+(ty3+8).toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#0e7490">'+Math.round(S.th)+'°</text>';
+  }
+  // Cuadrante IV
+  if(S.quads.IV && S.th<179){
+    var pX=P(r/sc, 0), pYm=P(0, -r/sc);
+    var midA_IV=rad(360 - (180-S.th)/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pYm)+'A'+r+','+r+' 0 0 0 '+pt(pX)+'Z" fill="#10b981" fill-opacity="0.3" stroke="#10b981" stroke-width="1.8"/>';
+    var tx4=O[0]+(r+20)*Math.cos(midA_IV), ty4=O[1]-(r+20)*Math.sin(midA_IV);
+    o+='<text x="'+tx4.toFixed(1)+'" y="'+(ty4+8).toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#047857">'+Math.round(180-S.th)+'°</text>';
+  }
+
   /* 5. EJES CARTESIANOS COMPLETOS (+ y -) */
   o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
-  /* 6. MARCAS Y NÚMEROS EN EJES (+ y -) */
+  /* 6. MARCAS Y NÚMEROS EN EJES */
   var st=n>24?5:n>13?2:1;
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
     var px=P(m,0), py=P(0,m);
-    // Eje X
     o+='<line x1="'+px[0]+'" y1="'+(px[1]-4)+'" x2="'+px[0]+'" y2="'+(px[1]+4)+'" stroke="#1d4ed8" stroke-width="1.5"/>';
     o+='<text x="'+px[0].toFixed(1)+'" y="'+(px[1]+16).toFixed(1)+'" text-anchor="middle" font-weight="600">'+m+'</text>';
     
-    // Eje Y
     if(S.th>5 && S.th<175){
       o+='<line x1="'+(py[0]-4)+'" y1="'+py[1]+'" x2="'+(py[0]+4)+'" y2="'+py[1]+'" stroke="#0f766e" stroke-width="1.5"/>';
       o+='<text x="'+(py[0]-9).toFixed(1)+'" y="'+(py[1]+4).toFixed(1)+'" text-anchor="end" font-weight="600">'+m+'</text>';
     }
   }
 
-  // Nombre de los extremos de los ejes
   var eXp=P(L+0.7,0), eXm=P(-L-0.7,0), eYp=P(0,L+0.7), eYm=P(0,-L-0.7);
   o+='<text x="'+eXp[0]+'" y="'+(eXp[1]+4)+'" fill="#1d4ed8" font-weight="bold">+X</text>';
   o+='<text x="'+eXm[0]+'" y="'+(eXm[1]+4)+'" fill="#1d4ed8" font-weight="bold" text-anchor="end">−X</text>';
   o+='<text x="'+eYp[0]+'" y="'+(eYp[1]-6)+'" fill="#0f766e" font-weight="bold" text-anchor="middle">+Y</text>';
   o+='<text x="'+eYm[0]+'" y="'+(eYm[1]+14)+'" fill="#0f766e" font-weight="bold" text-anchor="middle">−Y</text>';
 
-  /* 7. ÁNGULO ENTRE SEMIEJES POSITIVOS */
-  var r=Math.min(50,sc*L*.35),O=P(0,0),ac=colOf('ang');
-  var ma=rad(S.th/2);
-  if(S.th>1){
-    var sweep=S.th>180?1:0;
-    var ad='M'+pt(O)+'L'+(O[0]+r).toFixed(1)+','+O[1].toFixed(1)+'A'+r+','+r+' 0 '+sweep+' 0 '+(O[0]+r*c).toFixed(1)+','+(O[1]-r*s).toFixed(1)+'Z';
-    o+='<g data-id="ang" class="g'+(S.off.ang?' dim':'')+'"><path d="'+ad+'" fill="'+ac+'" fill-opacity="0.45" stroke="'+ac+'" stroke-width="2.5"/></g>';
-    
-    var labelDist=r+22;
-    var tx=(O[0]+labelDist*Math.cos(ma)).toFixed(1);
-    var ty=(O[1]-labelDist*Math.sin(ma)).toFixed(1);
-    o+='<g style="pointer-events:none"><rect x="'+(tx-24)+'" y="'+(ty-12)+'" width="48" height="22" rx="11" fill="#fff" stroke="'+ac+'" stroke-width="1.5"/><text x="'+tx+'" y="'+(+ty+4)+'" text-anchor="middle" font-weight="bold" fill="#b45309" font-size="12px">'+Math.round(S.th)+'°</text></g>';
-  }
-
   scene.innerHTML=o;
 
-  // Manejador del eje Y móvil (+Y)
   var hp=P(0,L);
   hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
   updateCharExpression();
 }
 
-/* Panel descriptivo */
 function info(id){
-  var n=S.n,L=n+1,th=S.th,c=Math.cos(rad(th)),s=Math.sin(rad(th));
+  var n=S.n,th=Math.round(S.th);
   if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal completo con valores negativos (−'+n+') y positivos (+'+n+').</p>';
-  if(id==='ey')return '<p><b>Eje Y:</b> Eje inclinado giratorio con valores negativos y positivos formando '+Math.round(th)+'°.</p>';
-  if(id==='ang')return '<p>Ángulo entre los semiejes positivos: <b>'+Math.round(th)+'°</b>.</p>';
-  if(id.indexOf('curve')===0)return '<p><b>Curva Envolvente Parabólica:</b> Generada por la familia de rectas tangentes en el cuadrante seleccionado.</p>';
+  if(id==='ey')return '<p><b>Eje Y:</b> Eje giratorio que forma '+th+'° con el semieje +X y '+(180-th)+'° con el semieje −X.</p>';
+  if(id.indexOf('curve')===0)return '<p><b>Curva Envolvente:</b> Observa cómo se contrae o estira dependiendo de si el ángulo en su cuadrante es agudo u obtuso.</p>';
   if(isLine(id)){
     var parts=id.split('_');
-    return '<p><b>Recta '+parts[2]+'</b> en el '+parts[1]+'.</p><p>Une el punto en el eje horizontal con el eje correspondiente con paso simétrico.</p>';
+    return '<p><b>Recta '+parts[2]+'</b> en el '+parts[1]+'.</p>';
   }
   return '<p>Elemento seleccionado: '+id+'</p>';
 }
@@ -225,7 +243,33 @@ function sync(){
 }
 $('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync()});
 $('#n').addEventListener('input',function(e){S.n=+e.target.value;sync()});
-$('#selQuad').addEventListener('change',function(e){S.quad=e.target.value;render()});
+
+/* Control de Selección Múltiple de Cuadrantes */
+$('#quadBtns').addEventListener('click',function(e){
+  var q=e.target.dataset.q;
+  if(q){
+    S.quads[q]=!S.quads[q];
+    e.target.classList.toggle('on', S.quads[q]);
+    e.target.setAttribute('aria-pressed', S.quads[q]);
+    render();
+  }
+});
+$('#qAll').onclick=function(){
+  ['I','II','III','IV'].forEach(function(k){
+    S.quads[k]=true;
+    var btn=$('#quadBtns button[data-q="'+k+'"]');
+    if(btn){btn.classList.add('on');btn.setAttribute('aria-pressed', true);}
+  });
+  render();
+};
+$('#qClear').onclick=function(){
+  ['I','II','III','IV'].forEach(function(k){
+    S.quads[k]=false;
+    var btn=$('#quadBtns button[data-q="'+k+'"]');
+    if(btn){btn.classList.remove('on');btn.setAttribute('aria-pressed', false);}
+  });
+  render();
+};
 
 $('#pre').innerHTML='';
 [0, 45, 90, 135, 180].forEach(function(a){
@@ -237,7 +281,7 @@ tog('#bCurve','curve');tog('#bGrid','grid');tog('#bAnim','anim');
 $('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
 function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
 
-/* Arrastre del eje Y */
+/* Arrastre de eje Y */
 var drag=false;
 hd.addEventListener('pointerdown',function(e){drag=true;S.anim=false;pa();hd.setPointerCapture(e.pointerId);e.preventDefault()});
 hd.addEventListener('pointermove',function(e){if(!drag)return;
@@ -278,17 +322,16 @@ function updateCharExpression(){
     chSpeech.textContent=nom+': 180° Recta llana';
   } else if(th<70){
     chMouth.setAttribute('d','M -5 27 A 5 5 0 1 0 5 27 A 5 5 0 1 0 -5 27');
-    chSpeech.textContent=nom+': Agudo ('+th+'°)';
+    chSpeech.textContent=nom+': I ('+th+'°) vs II ('+(180-th)+'°)';
   } else if(th>115){
     chMouth.setAttribute('d','M -10 21 Q 0 33 10 21 Z');
-    chSpeech.textContent=nom+': Obtuso ('+th+'°)';
+    chSpeech.textContent=nom+': I ('+th+'°) vs II ('+(180-th)+'°)';
   } else {
     chMouth.setAttribute('d','M -8 24 Q 0 31 8 24');
-    chSpeech.textContent=nom+': Ángulo '+th+'°';
+    chSpeech.textContent=nom+': 90° Ángulo recto';
   }
 }
 
-// Control del nombre y color del personaje
 $('#triName').addEventListener('input',function(e){
   S.charName=e.target.value.trim()||'Tri';
   updateCharExpression();
@@ -318,7 +361,6 @@ ch.addEventListener('pointermove',function(e){
 ch.addEventListener('pointerup',function(){if(charDrag){charDrag=false;updateCharExpression()}});
 ch.addEventListener('pointercancel',function(){charDrag=false});
 
-// Respiración y balanceo sutil
 var bob=0;
 setInterval(function(){
   if(!charDrag){
