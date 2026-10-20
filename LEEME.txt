@@ -1,0 +1,13 @@
+RECTAS Y CURVA ENTRE EJES
+
+Archivos:
+- index.html  -> estructura (botones, controles, panel)
+- estilos.css -> colores y diseño
+- app.js      -> toda la lógica (la guía para editar está al principio)
+
+Para probar: abrí index.html con doble clic. No necesita internet.
+En Visual Studio Code: Archivo > Abrir carpeta > "rectas-y-curva".
+(Opcional) Extensión "Live Server" para ver los cambios al guardar.
+
+Para compartir con alumnos: usá el archivo único rectas-y-curva.html
+(es lo mismo, todo junto en un solo archivo).
