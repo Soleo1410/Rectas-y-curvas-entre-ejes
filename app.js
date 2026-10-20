@@ -3,6 +3,9 @@ var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
   n:10,
+  visibleLines:10,
+  stepPlaying:false,
+  stepTimer:null,
   zoom:1.0,
   quads:{I:true, II:false, III:true, IV:false},
   curve:true,
@@ -21,6 +24,12 @@ var rad=function(d){return d*Math.PI/180};
 var DEF={ex:'#1d4ed8',ey:'#0f766e',curve:'#ff4d6d',ang:'#f59e0b'};
 var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Curva Envolvente',ang:'Ángulo'};
 var PAL=['#1d4ed8','#0f766e','#16a34a','#f59e0b','#ff4d6d','#c026d3','#7c3aed','#17214d'];
+
+var PREGUNTAS=[
+  "¿Los hilos son rectos o curvos? ¿Por qué se ve una curva en el borde?",
+  "¿Qué pasa con la pendiente a medida que nos acercamos al eje X?",
+  "¿Se rompe la curva si el ángulo no es de 90°?"
+];
 
 function isLine(id){return /^l_\w+_\d+$/.test(id)}
 function lineAuto(i){return 'hsl('+(205+(i-1)/Math.max(1,S.n-1)*140)+',68%,46%)'}
@@ -49,7 +58,6 @@ function render(){
   
   var sc=Math.min(scX,scY) * S.zoom;
   V.sc=sc;
-
   V.ox=w/2;
   V.oy=h/2;
 
@@ -73,6 +81,7 @@ function render(){
 
   var o='';
 
+  /* 1. ETIQUETAS DE CUADRANTES */
   var qDist=L*0.65;
   var quadsInfo=[
     {id:'I', name:'Cuadrante I (+,+)', pos:P(qDist,qDist)},
@@ -85,6 +94,7 @@ function render(){
     o+='<text x="'+qd.pos[0].toFixed(1)+'" y="'+qd.pos[1].toFixed(1)+'" class="quad-label'+activeClass+'" text-anchor="middle">'+qd.name+'</text>';
   });
 
+  /* 2. CUADRÍCULA */
   if(S.grid && s>0.04){
     var g='';
     var step=n>20?2:1;
@@ -95,6 +105,7 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
+  /* 3. RECTAS Y CURVAS */
   var quadSigns={
     'I':{sx:1,sy:1},
     'II':{sx:-1,sy:1},
@@ -107,15 +118,17 @@ function render(){
     var sx=quadSigns[qKey].sx;
     var sy=quadSigns[qKey].sy;
 
-    for(var j=1;j<=n;j++){
+    for(var j=1;j<=S.visibleLines;j++){
       var id='l_'+qKey+'_'+j;
       o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 2);
     }
 
-    if(S.curve){
+    if(S.curve && S.visibleLines>=4){
       var dCurve='';
-      for(var i=0;i<=80;i++){
-        var t=i/80;
+      var maxT=S.visibleLines/n;
+      var steps=Math.round(80*maxT);
+      for(var i=0;i<=steps;i++){
+        var t=(i/steps)*maxT;
         var p=P(sx*L*t*t, sy*L*(1-t)*(1-t));
         dCurve+=(i?'L':'M')+pt(p);
       }
@@ -123,6 +136,7 @@ function render(){
     }
   });
 
+  /* 4. SECTORES Y GRADOS */
   var r=Math.min(48, sc*L*0.3);
   var O=P(0,0);
 
@@ -155,9 +169,11 @@ function render(){
     o+=angleBadge(tx4, ty4, Math.round(180-S.th));
   }
 
+  /* 5. EJES CARTESIANOS */
   o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
+  /* 6. MARCAS Y NÚMEROS EN EJES */
   var st=n>24?5:n>13?2:1;
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
@@ -181,17 +197,26 @@ function render(){
 
   var hp=P(0,L);
   hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
-  updateCharExpression();
 }
 
 function info(id){
-  var n=S.n,th=Math.round(S.th);
+  var n=S.n, th=Math.round(S.th), L=n+1;
   if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal (−'+n+' a +'+n+').</p>';
-  if(id==='ey')return '<p><b>Eje Y:</b> Eje móvil a '+th+'° con el semieje +X.</p>';
-  if(id.indexOf('curve')===0)return '<p><b>Curva Envolvente:</b> Generada por rectas tangentes.</p>';
+  if(id==='ey')return '<p><b>Eje Y:</b> Eje móvil a '+th+'° con el semieje +X y '+(180-th)+'° con el semieje −X.</p>';
+  if(id.indexOf('curve')===0){
+    return '<p><b>Curva Envolvente (Función Cuadrática emergente):</b></p>' +
+           '<p>Ecuación en coordenadas locales: <code>√x + √y = √'+L+'</code></p>' +
+           '<p>Forma cuadrática implícita: <code>(x − y)² − '+(2*L)+'(x + y) + '+(L*L)+' = 0</code></p>' +
+           '<p><i>Aunque cada hilo individual responde a una ecuación de primer grado (recta), la frontera envolvente define una curva cuadrática de segundo grado.</i></p>';
+  }
   if(isLine(id)){
     var parts=id.split('_');
-    return '<p><b>Recta '+parts[2]+'</b> en '+parts[1]+'.</p>';
+    var k=+parts[2];
+    var m = -((L-k)/k).toFixed(2);
+    return '<p><b>Hilo / Recta '+k+' ('+parts[1]+'):</b></p>' +
+           '<p>Une el punto ('+k+', 0) con (0, '+(L-k)+').</p>' +
+           '<p>Ecuación segmentaria: <code>x/'+k+' + y/'+(L-k)+' = 1</code></p>' +
+           '<p>Ecuación explícita (1.º grado): <code>y = '+m+'x + '+(L-k)+'</code></p>';
   }
   return '<p>Elemento seleccionado: '+id+'</p>';
 }
@@ -233,11 +258,64 @@ $('#sbody').addEventListener('input',function(e){
 
 function sync(){
   var t=Math.round(S.th);$('#th').value=t;$('#thv').textContent=t+'°';
-  $('#n').value=S.n;$('#nv').textContent=S.n;
+  $('#visibleLines').value=S.visibleLines;
+  $('#lineCountVal').textContent=S.visibleLines+' / '+S.n;
   render();if(S.sel&&S.tab==='info')sheet();
 }
-$('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync()});
-$('#n').addEventListener('input',function(e){S.n=+e.target.value;sync()});
+$('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync();updateCharExpression()});
+
+$('#visibleLines').addEventListener('input',function(e){
+  stopStepPlay();
+  S.visibleLines=+e.target.value;
+  sync();
+});
+
+$('#bStepPlay').onclick=function(){
+  if(S.stepPlaying){
+    stopStepPlay();
+  } else {
+    S.stepPlaying=true;
+    this.textContent='⏸ Pausar tejido';
+    if(S.visibleLines>=S.n) S.visibleLines=0;
+    S.stepTimer=setInterval(function(){
+      if(S.visibleLines<S.n){
+        S.visibleLines++;
+        sync();
+      } else {
+        stopStepPlay();
+      }
+    },550);
+  }
+};
+
+$('#bStepReset').onclick=function(){
+  stopStepPlay();
+  S.visibleLines=0;
+  sync();
+};
+
+function stopStepPlay(){
+  S.stepPlaying=false;
+  clearInterval(S.stepTimer);
+  $('#bStepPlay').textContent='▶ Tejer hilos paso a paso';
+}
+
+$('#pre').innerHTML='';
+[0, 60, 90, 120, 180].forEach(function(a){
+  var b=document.createElement('button');
+  b.textContent=a+'°';
+  b.onclick=function(){
+    S.anim=false;pa();S.th=a;sync();
+    if(a===60){
+      say("¡Ángulo agudo de 60°! Mirá cómo se comprime la parábola.");
+    } else if(a===120){
+      say("¡Ángulo obtuso de 120°! Mirá cómo se ensancha.");
+    } else {
+      updateCharExpression();
+    }
+  };
+  $('#pre').appendChild(b);
+});
 
 $('#zoomIn').onclick=function(){S.zoom=Math.min(3.0, S.zoom+0.2);render()};
 $('#zoomOut').onclick=function(){S.zoom=Math.max(0.4, S.zoom-0.2);render()};
@@ -257,6 +335,7 @@ $('#quadBtns').addEventListener('click',function(e){
     e.target.classList.toggle('on', S.quads[q]);
     e.target.setAttribute('aria-pressed', S.quads[q]);
     render();
+    lanzarPreguntaAleatoria();
   }
 });
 $('#qAll').onclick=function(){
@@ -266,6 +345,7 @@ $('#qAll').onclick=function(){
     if(btn){btn.classList.add('on');btn.setAttribute('aria-pressed', true);}
   });
   render();
+  lanzarPreguntaAleatoria();
 };
 $('#qClear').onclick=function(){
   ['I','II','III','IV'].forEach(function(k){
@@ -275,11 +355,6 @@ $('#qClear').onclick=function(){
   });
   render();
 };
-
-$('#pre').innerHTML='';
-[0, 45, 90, 135, 180].forEach(function(a){
-  var b=document.createElement('button');b.textContent=a+'°';
-  b.onclick=function(){S.anim=false;pa();S.th=a;sync()};$('#pre').appendChild(b)});
 
 function tog(id,key){$(id).onclick=function(){S[key]=!S[key];this.setAttribute('aria-pressed',S[key]);if(key==='anim'){if(S.anim)loop()}render()}}
 tog('#bCurve','curve');tog('#bGrid','grid');tog('#bAnim','anim');
@@ -293,7 +368,9 @@ hd.addEventListener('pointermove',function(e){if(!drag)return;
   var deg=Math.atan2(dy,dx)*180/Math.PI;
   if(deg<0){deg=dx>=0?0:180}
   S.th=Math.max(0,Math.min(180,deg));
-  sync()});
+  sync();
+  updateCharExpression();
+});
 hd.addEventListener('pointerup',function(){drag=false});
 hd.addEventListener('pointercancel',function(){drag=false});
 
@@ -305,33 +382,49 @@ function step(t){
   S.th+=dir*26*dt;
   if(S.th>=180){S.th=180;dir=-1}
   if(S.th<=0){S.th=0;dir=1}
-  sync();requestAnimationFrame(step)}
+  sync();
+  updateCharExpression();
+  requestAnimationFrame(step);
+}
 
-var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
+var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech'),speechBox=$('#speech-box');
 var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
 var charPos={x:80,y:80},charDrag=false,charOffset={x:0,y:0};
 
 function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+')')}
 
+function say(texto){
+  var nom=S.charName||'Tri';
+  chSpeech.textContent=nom+': '+texto;
+  var len=chSpeech.textContent.length;
+  var w=Math.max(160, Math.min(320, len*6.8));
+  speechBox.setAttribute('width', w);
+  chSpeech.setAttribute('x', w/2);
+}
+
 function updateCharExpression(){
   var th=Math.round(S.th);
-  var nom=S.charName||'Tri';
-  if(th===0){
+  if(th===60){
+    say("¡Ángulo agudo de 60°! Mirá cómo se comprime la parábola.");
+  } else if(th===120){
+    say("¡Ángulo obtuso de 120°! Mirá cómo se ensancha.");
+  } else if(th===0){
     chMouth.setAttribute('d','M -6 28 L 6 28');
-    chSpeech.textContent=nom+': 0° Superpuestos';
+    say("0° Superpuestos sobre una semirrecta.");
   } else if(th===180){
     chMouth.setAttribute('d','M -10 22 Q 0 34 10 22 Z');
-    chSpeech.textContent=nom+': 180° Recta llana';
-  } else if(th<70){
-    chMouth.setAttribute('d','M -5 27 A 5 5 0 1 0 5 27 A 5 5 0 1 0 -5 27');
-    chSpeech.textContent=nom+': I ('+th+'°) vs II ('+(180-th)+'°)';
-  } else if(th>115){
-    chMouth.setAttribute('d','M -10 21 Q 0 33 10 21 Z');
-    chSpeech.textContent=nom+': I ('+th+'°) vs II ('+(180-th)+'°)';
-  } else {
+    say("180° Recta continua.");
+  } else if(th===90){
     chMouth.setAttribute('d','M -8 24 Q 0 31 8 24');
-    chSpeech.textContent=nom+': 90° Ángulo recto';
+    say("90° Ángulo recto clásico.");
+  } else {
+    say("Ángulo: "+th+"°");
   }
+}
+
+function lanzarPreguntaAleatoria(){
+  var preg = PREGUNTAS[Math.floor(Math.random()*PREGUNTAS.length)];
+  say(preg);
 }
 
 $('#triName').addEventListener('input',function(e){
@@ -348,7 +441,7 @@ ch.addEventListener('pointerdown',function(e){
   charOffset.x=(e.clientX-r.left)-charPos.x;
   charOffset.y=(e.clientY-r.top)-charPos.y;
   ch.setPointerCapture(e.pointerId);
-  chSpeech.textContent=S.charName+': ¡Wiii!';
+  lanzarPreguntaAleatoria();
   e.stopPropagation();
 });
 
@@ -360,7 +453,7 @@ ch.addEventListener('pointermove',function(e){
   updateCharPos();
 });
 
-ch.addEventListener('pointerup',function(){if(charDrag){charDrag=false;updateCharExpression()}});
+ch.addEventListener('pointerup',function(){charDrag=false});
 ch.addEventListener('pointercancel',function(){charDrag=false});
 
 var bob=0;
@@ -376,4 +469,5 @@ new ResizeObserver(render).observe(svg);
 window.addEventListener('resize',render);
 updateCharPos();
 sync();
+updateCharExpression();
 })();
