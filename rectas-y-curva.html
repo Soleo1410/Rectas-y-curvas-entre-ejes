@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RECTAS Y CURVAS ENTRE EJES (OFFLINE)</title>
+  <style>
+    :root{--bg:#eef2f7;--ink:#17214d;--mut:#5b6685;--card:#fff;--acc:#ff4d6d;--line:#d5dcea}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-top:env(safe-area-inset-top);-webkit-tap-highlight-color:transparent}
+    header{padding:10px 16px 2px}
+    h1{font-size:1.1rem;margin:0;letter-spacing:-.01em}
+    header p{margin:2px 0 0;font-size:.82rem;color:var(--mut)}
+
+    #cv{flex:1;min-height:0;width:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+    #cv text{font-family:inherit;font-size:11px;fill:var(--mut);pointer-events:none}
+    #cv .quad-label{font-size:13px;font-weight:700;fill:#94a3b8;opacity:0.45;transition:opacity 0.2s, fill 0.2s}
+    #cv .quad-label.quad-active{fill:#334155;opacity:0.95}
+    #cv .hit{stroke:transparent;stroke-width:20;fill:none;stroke-linecap:round;cursor:pointer}
+    #cv .vis{fill:none;stroke-linecap:round;pointer-events:none}
+    .dim{opacity:.12}
+    #hd{cursor:grab;touch-action:none}
+
+    .bottom{background:var(--card);border-radius:20px 20px 0 0;box-shadow:0 -6px 24px rgba(23,33,77,.12);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+    .row{display:flex;align-items:center;gap:10px;margin:6px 0}
+    .row label{font-size:.85rem;color:var(--mut);min-width:68px}
+    .row output{font-weight:700;min-width:48px;text-align:right;font-variant-numeric:tabular-nums}
+
+    .input-text{flex:1;padding:6px 10px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:.88rem;color:var(--ink)}
+    .color-picker{border:none;background:none;width:32px;height:32px;cursor:pointer;padding:0}
+
+    input[type=range]{flex:1;accent-color:var(--acc);height:28px}
+    .btns{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+    button{font:inherit;font-size:.86rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:7px 13px;cursor:pointer}
+    button:focus-visible,input:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
+    button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+    .btn-sub{font-size:0.78rem;padding:5px 10px;background:#f1f5f9;border:1px dashed var(--line);color:var(--mut)}
+    .btn-sub:hover{background:#e2e8f0;color:var(--ink)}
+
+    #sheet h2{font-size:1.05rem;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+    #sheet h2 i{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
+    #sbody{max-height:26vh;overflow:auto;font-size:.92rem;margin-top:10px}
+    #sbody p{margin:0 0 8px}
+    .sw{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .sw button.c{width:34px;height:34px;padding:0;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
+    [hidden]{display:none!important}
+
+    #char{transition:transform 0.05s ease-out;user-select:none}
+    #char:active{cursor:grabbing !important}
+    #char-base{transition:fill 0.3s ease}
+    @keyframes blink{
+      0%, 90%, 100%{transform:scaleY(1)}
+      95%{transform:scaleY(0.1)}
+    }
+    #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
+  </style>
+</head>
+<body>
+<header>
+  <h1>RECTAS Y CURVAS EN LOS CUADRANTES</h1>
+  <p>Funciona 100% sin internet. Cambiá el ángulo, cuadrantes y el personaje.</p>
+</header>
+
+<svg id="cv" role="img" aria-label="Ejes cartesianos y rectas envolventes">
+  <defs>
+    <filter id="shadow3d" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="bodyGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.15"/>
+    </linearGradient>
+    <linearGradient id="bodyGradRight" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="bodyGradBottom" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
+    </linearGradient>
+    <radialGradient id="eyeGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="80%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </radialGradient>
+  </defs>
+
+  <g id="scene"></g>
+  <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
+  
+  <!-- Personaje Triángulo Realista / 3D -->
+  <g id="char" transform="translate(80, 80)" style="cursor: grab;">
+    <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
+    <g id="char-feet">
+      <ellipse id="foot-l" cx="-16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
+      <ellipse id="foot-r" cx="16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
+    </g>
+    <path id="arm-l" d="M -24 16 Q -42 12 -34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <path id="arm-r" d="M 24 16 Q 42 12 34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
+    <g id="char-body-group" filter="url(#shadow3d)">
+      <polygon id="char-base" points="0,-40 -40,38 40,38" fill="#2563eb" stroke="#1e3a8a" stroke-width="2.5" stroke-linejoin="round"/>
+      <polygon points="0,-40 -40,38 0,38" fill="url(#bodyGradLeft)"/>
+      <polygon points="0,-40 0,38 40,38" fill="url(#bodyGradRight)"/>
+      <polygon points="-40,38 40,38 0,30" fill="url(#bodyGradBottom)"/>
+    </g>
+    <ellipse cx="-11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
+    <ellipse cx="11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
+    <circle id="pupil-l" cx="-10" cy="7" r="3.5" fill="#0f172a"/>
+    <circle id="pupil-r" cx="12" cy="7" r="3.5" fill="#0f172a"/>
+    <circle cx="-12" cy="4" r="1.5" fill="#ffffff"/>
+    <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
+    <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <g id="bubble" transform="translate(24, -54)">
+      <rect rx="9" ry="9" width="150" height="32" fill="#ffffff" stroke="#17214d" stroke-width="1.8" filter="url(#shadow3d)"/>
+      <polygon points="4,24 -6,31 12,24" fill="#ffffff"/>
+      <text id="char-speech" x="75" y="20" text-anchor="middle" font-size="11" font-weight="700" fill="#17214d">¡Hola!</text>
+    </g>
+  </g>
+</svg>
+
+<section class="bottom" id="ctrl">
+  <div class="row">
+    <label for="th">Ángulo</label>
+    <input id="th" type="range" min="0" max="180" step="1" value="90">
+    <output id="thv">90°</output>
+  </div>
+  
+  <div class="btns" id="pre"></div>
+
+  <div class="row">
+    <label for="n">Rectas</label>
+    <input id="n" type="range" min="1" max="50" step="1" value="10">
+    <output id="nv">10</output>
+  </div>
+
+  <div class="row">
+    <label>Cuadrantes</label>
+    <div class="btns" id="quadBtns" style="margin:0;">
+      <button class="chip on" data-q="I" aria-pressed="true">C. I (+,+)</button>
+      <button class="chip" data-q="II" aria-pressed="false">C. II (−,+)</button>
+      <button class="chip on" data-q="III" aria-pressed="true">C. III (−,−)</button>
+      <button class="chip" data-q="IV" aria-pressed="false">C. IV (+,−)</button>
+      <button class="btn-sub" id="qAll">Todos</button>
+      <button class="btn-sub" id="qClear">Ninguno</button>
+    </div>
+  </div>
+
+  <div class="btns">
+    <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
+    <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
+    <button class="chip" id="bAnim" aria-pressed="false">Animar</button>
+    <button class="chip" id="bReset">Restablecer colores</button>
+  </div>
+
+  <div class="row char-settings">
+    <label for="triName">Nombre:</label>
+    <input type="text" id="triName" value="Triangulín" maxlength="15" class="input-text">
+    <label for="triColor" style="min-width:auto;margin-left:8px;">Color 3D:</label>
+    <input type="color" id="triColor" value="#2563eb" class="color-picker">
+  </div>
+</section>
+
+<section class="bottom" id="sheet" hidden>
+  <h2><i id="sdot"></i><span id="stitle"></span></h2>
+  <div class="btns" id="stabs">
+    <button data-t="info">Información</button>
+    <button data-t="color">Cambiar color</button>
+    <button data-t="vis" id="tvis">Atenuar</button>
+    <button data-t="close">Volver</button>
+  </div>
+  <div id="sbody"></div>
+</section>
+
+<script>
+(function(){
+var $=function(s){return document.querySelector(s)};
+var S={
+  th:90,
+  n:10,
+  quads:{I:true, II:false, III:true, IV:false},
+  curve:true,
+  grid:true,
+  anim:false,
+  col:{},
+  off:{},
+  sel:null,
+  tab:'info',
+  charName:'Triangulín'
+};
+
+var svg=$('#cv'),scene=$('#scene'),hd=$('#hd'),V={ox:0,oy:0,sc:1};
+var rad=function(d){return d*Math.PI/180};
+
+var DEF={ex:'#1d4ed8',ey:'#0f766e',curve:'#ff4d6d',ang:'#f59e0b'};
+var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Curva Envolvente',ang:'Ángulo'};
+var PAL=['#1d4ed8','#0f766e','#16a34a','#f59e0b','#ff4d6d','#c026d3','#7c3aed','#17214d'];
+
+function isLine(id){return /^l_\w+_\d+$/.test(id)}
+function lineAuto(i){return 'hsl('+(205+(i-1)/Math.max(1,S.n-1)*140)+',68%,46%)'}
+function colOf(id){if(S.col[id])return S.col[id];return isLine(id)?lineAuto(+id.split('_')[2]):DEF[id]}
+function name(id){
+  if(isLine(id)){
+    var p=id.split('_');
+    return 'Recta '+p[2]+' ('+p[1]+')';
+  }
+  return NAME[id]||id;
+}
+
+function render(){
+  var w=svg.clientWidth,h=svg.clientHeight;if(!w||!h)return;
+  var n=S.n,L=n+1;
+  var c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
+
+  var xCorners=[-L-L*c, -L+L*c, L-L*c, L+L*c];
+  var minX=Math.min.apply(null,xCorners), maxX=Math.max.apply(null,xCorners);
+  var spanX=Math.max(2*L, maxX-minX);
+  var spanY=Math.max(2*L*Math.abs(s), 14);
+
+  var M=40;
+  var scX=(w-2*M)/spanX;
+  var scY=(h-2*M-24)/spanY;
+  var sc=Math.min(scX,scY);
+  V.sc=sc;
+
+  V.ox=w/2;
+  V.oy=h/2;
+
+  function P(x,y){return [V.ox+sc*(x+y*c), V.oy-sc*y*s]}
+  function pt(p){return p[0].toFixed(1)+','+p[1].toFixed(1)}
+  function seg(a,b){return 'M'+pt(a)+'L'+pt(b)}
+  function el(id,d,width,extra){
+    var col=colOf(id),sel=S.sel===id,dim=S.off[id]?' dim':'';
+    return '<g data-id="'+id+'" class="g'+dim+'">'+
+      (sel?'<path class="vis" d="'+d+'" stroke="'+col+'" stroke-width="'+(width+7)+'" opacity=".25"/>':'')+
+      '<path class="vis" d="'+d+'" stroke="'+col+'" stroke-width="'+(sel?width+1.5:width)+'" '+(extra||'')+'/>'+
+      '<path class="hit" d="'+d+'"/></g>';
+  }
+
+  var o='';
+
+  var qDist=L*0.65;
+  var quadsInfo=[
+    {id:'I', name:'Cuadrante I (+,+)', pos:P(qDist,qDist)},
+    {id:'II', name:'Cuadrante II (−,+)', pos:P(-qDist,qDist)},
+    {id:'III', name:'Cuadrante III (−,−)', pos:P(-qDist,-qDist)},
+    {id:'IV', name:'Cuadrante IV (+,−)', pos:P(qDist,-qDist)}
+  ];
+  quadsInfo.forEach(function(qd){
+    var activeClass=S.quads[qd.id]?' quad-active':'';
+    o+='<text x="'+qd.pos[0].toFixed(1)+'" y="'+qd.pos[1].toFixed(1)+'" class="quad-label'+activeClass+'" text-anchor="middle">'+qd.name+'</text>';
+  });
+
+  if(S.grid && s>0.04){
+    var g='';
+    var step=n>20?2:1;
+    for(var k=-n;k<=n;k+=step){
+      g+=seg(P(k,-n),P(k,n));
+      g+=seg(P(-n,k),P(n,k));
+    }
+    o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
+  }
+
+  var quadSigns={
+    'I':{sx:1,sy:1},
+    'II':{sx:-1,sy:1},
+    'III':{sx:-1,sy:-1},
+    'IV':{sx:1,sy:-1}
+  };
+
+  Object.keys(S.quads).forEach(function(qKey){
+    if(!S.quads[qKey]) return;
+    var sx=quadSigns[qKey].sx;
+    var sy=quadSigns[qKey].sy;
+
+    for(var j=1;j<=n;j++){
+      var id='l_'+qKey+'_'+j;
+      o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 2);
+    }
+
+    if(S.curve){
+      var dCurve='';
+      for(var i=0;i<=80;i++){
+        var t=i/80;
+        var p=P(sx*L*t*t, sy*L*(1-t)*(1-t));
+        dCurve+=(i?'L':'M')+pt(p);
+      }
+      o+=el('curve_'+qKey, dCurve, 3);
+    }
+  });
+
+  var r=Math.min(46, sc*L*0.3);
+  var O=P(0,0);
+
+  if(S.quads.I && S.th>1){
+    var pX=P(r/sc, 0), pY=P(0, r/sc);
+    var midA=rad(S.th/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pX)+'A'+r+','+r+' 0 0 0 '+pt(pY)+'Z" fill="#f59e0b" fill-opacity="0.35" stroke="#f59e0b" stroke-width="1.8"/>';
+    var tx=O[0]+(r+20)*Math.cos(midA), ty=O[1]-(r+20)*Math.sin(midA);
+    o+='<text x="'+tx.toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#b45309">'+Math.round(S.th)+'°</text>';
+  }
+  if(S.quads.II && S.th<179){
+    var pXm=P(-r/sc, 0), pY=P(0, r/sc);
+    var midA_II=rad(180 - (180-S.th)/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pY)+'A'+r+','+r+' 0 0 0 '+pt(pXm)+'Z" fill="#8b5cf6" fill-opacity="0.3" stroke="#8b5cf6" stroke-width="1.8"/>';
+    var tx2=O[0]+(r+20)*Math.cos(midA_II), ty2=O[1]-(r+20)*Math.sin(midA_II);
+    o+='<text x="'+tx2.toFixed(1)+'" y="'+ty2.toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#6d28d9">'+Math.round(180-S.th)+'°</text>';
+  }
+  if(S.quads.III && S.th>1){
+    var pXm=P(-r/sc, 0), pYm=P(0, -r/sc);
+    var midA_III=rad(180 + S.th/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pXm)+'A'+r+','+r+' 0 0 0 '+pt(pYm)+'Z" fill="#06b6d4" fill-opacity="0.3" stroke="#06b6d4" stroke-width="1.8"/>';
+    var tx3=O[0]+(r+20)*Math.cos(midA_III), ty3=O[1]-(r+20)*Math.sin(midA_III);
+    o+='<text x="'+tx3.toFixed(1)+'" y="'+(ty3+8).toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#0e7490">'+Math.round(S.th)+'°</text>';
+  }
+  if(S.quads.IV && S.th<179){
+    var pX=P(r/sc, 0), pYm=P(0, -r/sc);
+    var midA_IV=rad(360 - (180-S.th)/2);
+    o+='<path d="M'+pt(O)+'L'+pt(pYm)+'A'+r+','+r+' 0 0 0 '+pt(pX)+'Z" fill="#10b981" fill-opacity="0.3" stroke="#10b981" stroke-width="1.8"/>';
+    var tx4=O[0]+(r+20)*Math.cos(midA_IV), ty4=O[1]-(r+20)*Math.sin(midA_IV);
+    o+='<text x="'+tx4.toFixed(1)+'" y="'+(ty4+8).toFixed(1)+'" text-anchor="middle" font-size="11px" font-weight="bold" fill="#047857">'+Math.round(180-S.th)+'°</text>';
+  }
+
+  o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
+  o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
+
+  var st=n>24?5:n>13?2:1;
+  for(var m=-n;m<=n;m+=st){
+    if(m===0) continue;
+    var px=P(m,0), py=P(0,m);
+    o+='<line x1="'+px[0]+'" y1="'+(px[1]-4)+'" x2="'+px[0]+'" y2="'+(px[1]+4)+'" stroke="#1d4ed8" stroke-width="1.5"/>';
+    o+='<text x="'+px[0].toFixed(1)+'" y="'+(px[1]+16).toFixed(1)+'" text-anchor="middle" font-weight="600">'+m+'</text>';
+    
+    if(S.th>5 && S.th<175){
+      o+='<line x1="'+(py[0]-4)+'" y1="'+py[1]+'" x2="'+(py[0]+4)+'" y2="'+py[1]+'" stroke="#0f766e" stroke-width="1.5"/>';
+      o+='<text x="'+(py[0]-9).toFixed(1)+'" y="'+(py[1]+4).toFixed(1)+'" text-anchor="end" font-weight="600">'+m+'</text>';
+    }
+  }
+
+  var eXp=P(L+0.7,0), eXm=P(-L-0.7,0), eYp=P(0,L+0.7), eYm=P(0,-L-0.7);
+  o+='<text x="'+eXp[0]+'" y="'+(eXp[1]+4)+'" fill="#1d4ed8" font-weight="bold">+X</text>';
+  o+='<text x="'+eXm[0]+'" y="'+(eXm[1]+4)+'" fill="#1d4ed8" font-weight="bold" text-anchor="end">−X</text>';
+  o+='<text x="'+eYp[0]+'" y="'+(eYp[1]-6)+'" fill="#0f766e" font-weight="bold" text-anchor="middle">+Y</text>';
+  o+='<text x="'+eYm[0]+'" y="'+(eYm[1]+14)+'" fill="#0f766e" font-weight="bold" text-anchor="middle">−Y</text>';
+
+  scene.innerHTML=o;
+
+  var hp=P(0,L);
+  hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
+  updateCharExpression();
+}
+
+function info(id){
+  var n=S.n,th=Math.round(S.th);
+  if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal completo con valores negativos (−'+n+') y positivos (+'+n+').</p>';
+  if(id==='ey')return '<p><b>Eje Y:</b> Eje móvil a '+th+'° con el semieje +X y '+(180-th)+'° con el semieje −X.</p>';
+  if(id.indexOf('curve')===0)return '<p><b>Curva Envolvente:</b> Observa cómo se contrae o expande según el ángulo del cuadrante.</p>';
+  if(isLine(id)){
+    var parts=id.split('_');
+    return '<p><b>Recta '+parts[2]+'</b> en el '+parts[1]+'.</p>';
+  }
+  return '<p>Elemento seleccionado: '+id+'</p>';
+}
+
+function sheet(){
+  var id=S.sel;if(!id)return;
+  $('#stitle').textContent=name(id);
+  $('#sdot').style.background=colOf(id);
+  $('#tvis').textContent=S.off[id]?'Mostrar':'Atenuar';
+  var bs=document.querySelectorAll('#stabs button');
+  for(var i=0;i<bs.length;i++)bs[i].classList.toggle('on',bs[i].dataset.t===S.tab);
+  var b=$('#sbody');
+  if(S.tab==='info')b.innerHTML=info(id);
+  else if(S.tab==='color'){
+    var h='<div class="sw">';
+    PAL.forEach(function(p){h+='<button class="c" data-c="'+p+'" style="background:'+p+'"></button>'});
+    h+='<input type="color" id="cpick" value="#1d4ed8"></div>';
+    b.innerHTML=h;
+  } else b.innerHTML='<p>'+(S.off[id]?'Elemento atenuado.':'Elemento visible.')+'</p>';
+}
+
+function open(id){S.sel=id;S.tab='info';$('#ctrl').hidden=true;$('#sheet').hidden=false;sheet();render()}
+function close(){S.sel=null;$('#sheet').hidden=true;$('#ctrl').hidden=false;render()}
+
+scene.addEventListener('click',function(e){var g=e.target.closest('[data-id]');if(g)open(g.dataset.id);else if(S.sel)close()});
+$('#stabs').addEventListener('click',function(e){
+  var t=e.target.dataset.t;if(!t)return;
+  if(t==='close')return close();
+  if(t==='vis'){S.off[S.sel]=!S.off[S.sel];S.tab='vis';render();return sheet()}
+  S.tab=t;sheet();
+});
+$('#sbody').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  if(b.dataset.c){S.col[S.sel]=b.dataset.c;render();sheet()}
+});
+$('#sbody').addEventListener('input',function(e){
+  if(e.target.id==='cpick'){S.col[S.sel]=e.target.value;render();$('#sdot').style.background=e.target.value}
+});
+
+function sync(){
+  var t=Math.round(S.th);$('#th').value=t;$('#thv').textContent=t+'°';
+  $('#n').value=S.n;$('#nv').textContent=S.n;
+  render();if(S.sel&&S.tab==='info')sheet();
+}
+$('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync()});
+$('#n').addEventListener('input',function(e){S.n=+e.target.value;sync()});
+
+$('#quadBtns').addEventListener('click',function(e){
+  var q=e.target.dataset.q;
+  if(q){
+    S.quads[q]=!S.quads[q];
+    e.target.classList.toggle('on', S.quads[q]);
+    e.target.setAttribute('aria-pressed', S.quads[q]);
+    render();
+  }
+});
+$('#qAll').onclick=function(){
+  ['I','II','III','IV'].forEach(function(k){
+    S.quads[k]=true;
+    var btn=$('#quadBtns button[data-q="'+k+'"]');
+    if(btn){btn.classList.add('on');btn.setAttribute('aria-pressed', true);}
+  });
+  render();
+};
+$('#qClear').onclick=function(){
+  ['I','II','III','IV'].forEach(function(k){
+    S.quads[k]=false;
+    var btn=$('#quadBtns button[data-q="'+k+'"]');
+    if(btn){btn.classList.remove('on');btn.setAttribute('aria-pressed', false);}
+  });
+  render();
+};
+
+$('#pre').innerHTML='';
+[0, 45, 90, 135, 180].forEach(function(a){
+  var b=document.createElement('button');b.textContent=a+'°';
+  b.onclick=function(){S.anim=false;pa();S.th=a;sync()};$('#pre').appendChild(b)});
+
+function tog(id,key){$(id).onclick=function(){S[key]=!S[key];this.setAttribute('aria-pressed',S[key]);if(key==='anim'){if(S.anim)loop()}render()}}
+tog('#bCurve','curve');tog('#bGrid','grid');tog('#bAnim','anim');
+$('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
+function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
+
+var drag=false;
+hd.addEventListener('pointerdown',function(e){drag=true;S.anim=false;pa();hd.setPointerCapture(e.pointerId);e.preventDefault()});
+hd.addEventListener('pointermove',function(e){if(!drag)return;
+  var r=svg.getBoundingClientRect(),dx=e.clientX-r.left-V.ox,dy=V.oy-(e.clientY-r.top);
+  var deg=Math.atan2(dy,dx)*180/Math.PI;
+  if(deg<0){deg=dx>=0?0:180}
+  S.th=Math.max(0,Math.min(180,deg));
+  sync()});
+hd.addEventListener('pointerup',function(){drag=false});
+hd.addEventListener('pointercancel',function(){drag=false});
+
+var dir=1,last=0;
+function loop(){last=performance.now();requestAnimationFrame(step)}
+function step(t){
+  if(!S.anim)return;
+  var dt=Math.min(.05,(t-last)/1000);last=t;
+  S.th+=dir*26*dt;
+  if(S.th>=180){S.th=180;dir=-1}
+  if(S.th<=0){S.th=0;dir=1}
+  sync();requestAnimationFrame(step)}
+
+var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
+var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
+var charPos={x:80,y:80},charDrag=false,charOffset={x:0,y:0};
+
+function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+')')}
+
+function updateCharExpression(){
+  var th=Math.round(S.th);
+  var nom=S.charName||'Tri';
+  if(th===0){
+    chMouth.setAttribute('d','M -6 28 L 6 28');
+    chSpeech.textContent=nom+': 0° Superpuestos';
+  } else if(th===180){
+    chMouth.setAttribute('d','M -10 22 Q 0 34 10 22 Z');
+    chSpeech.textContent=nom+': 180° Recta llana';
+  } else if(th<70){
+    chMouth.setAttribute('d','M -5 27 A 5 5 0 1 0 5 27 A 5 5 0 1 0 -5 27');
+    chSpeech.textContent=nom+': I ('+th+'°) vs II ('+(180-th)+'°)';
+  } else if(th>115){
+    chMouth.setAttribute('d','M -10 21 Q 0 33 10 21 Z');
+    chSpeech.textContent=nom+': I ('+th+'°) vs II ('+(180-th)+'°)';
+  } else {
+    chMouth.setAttribute('d','M -8 24 Q 0 31 8 24');
+    chSpeech.textContent=nom+': 90° Ángulo recto';
+  }
+}
+
+$('#triName').addEventListener('input',function(e){
+  S.charName=e.target.value.trim()||'Tri';
+  updateCharExpression();
+});
+$('#triColor').addEventListener('input',function(e){
+  baseBody.setAttribute('fill',e.target.value);
+});
+
+ch.addEventListener('pointerdown',function(e){
+  charDrag=true;
+  var r=svg.getBoundingClientRect();
+  charOffset.x=(e.clientX-r.left)-charPos.x;
+  charOffset.y=(e.clientY-r.top)-charPos.y;
+  ch.setPointerCapture(e.pointerId);
+  chSpeech.textContent=S.charName+': ¡Wiii!';
+  e.stopPropagation();
+});
+
+ch.addEventListener('pointermove',function(e){
+  if(!charDrag)return;
+  var r=svg.getBoundingClientRect();
+  charPos.x=Math.max(50,Math.min(r.width-50,(e.clientX-r.left)-charOffset.x));
+  charPos.y=Math.max(50,Math.min(r.height-50,(e.clientY-r.top)-charOffset.y));
+  updateCharPos();
+});
+
+ch.addEventListener('pointerup',function(){if(charDrag){charDrag=false;updateCharExpression()}});
+ch.addEventListener('pointercancel',function(){charDrag=false});
+
+var bob=0;
+setInterval(function(){
+  if(!charDrag){
+    bob+=0.06;
+    $('#foot-l').setAttribute('cy',42+Math.sin(bob)*1.8);
+    $('#foot-r').setAttribute('cy',42-Math.sin(bob)*1.8);
+  }
+},50);
+
+new ResizeObserver(render).observe(svg);
+window.addEventListener('resize',render);
+updateCharPos();
+sync();
+})();
+</script>
+</body>
+</html>
