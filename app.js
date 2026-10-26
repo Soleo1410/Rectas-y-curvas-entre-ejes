@@ -44,6 +44,7 @@ function name(id){
 
 function render(){
   var w=svg.clientWidth,h=svg.clientHeight;if(!w||!h)return;
+  var isMobile = w < 480;
   var n=Math.max(10, S.visibleLines), L=n+1;
   var c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
 
@@ -52,7 +53,7 @@ function render(){
   var spanX=Math.max(2*L, maxX-minX);
   var spanY=Math.max(2*L*Math.abs(s), 14);
 
-  var M=30;
+  var M=isMobile ? 20 : 30;
   var scX=(w-2*M)/spanX;
   var scY=(h-2*M-20)/spanY;
   
@@ -97,7 +98,7 @@ function render(){
   /* 2. CUADRÍCULA */
   if(S.grid && s>0.04){
     var g='';
-    var step=n>25?5:n>12?2:1;
+    var step=isMobile ? (n>20?10:5) : (n>25?5:(n>12?2:1));
     for(var k=-n;k<=n;k+=step){
       g+=seg(P(k,-n),P(k,n));
       g+=seg(P(-n,k),P(n,k));
@@ -105,7 +106,7 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
-  /* 3. RECTAS, ENVOLVENTE Y TANGENTES */
+  /* 3. RECTAS, ENVOLVENTE Y PUNTOS DE TANGENCIA */
   var quadSigns={
     'I':{sx:1,sy:1},
     'II':{sx:-1,sy:1},
@@ -134,7 +135,6 @@ function render(){
       }
       o+=el('curve_'+qKey, dCurve, 3.5);
 
-      // Puntos de tangencia exactos Tk
       for(var k=1; k<=S.visibleLines; k++){
         var tParam = k / L;
         var txLoc = L * tParam * tParam;
@@ -182,8 +182,8 @@ function render(){
   o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
-  /* 6. MARCAS Y NÚMEROS */
-  var st=n>25?5:n>12?2:1;
+  /* 6. MARCAS Y NÚMEROS (Espaciado adaptativo contra amontonamiento en móviles) */
+  var st = isMobile ? (n > 20 ? 10 : 5) : (n > 25 ? 5 : (n > 12 ? 2 : 1));
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
     var px=P(m,0), py=P(0,m);
@@ -309,7 +309,6 @@ function stopStepPlay(){
   $('#bStepPlay').textContent='▶ Tejer hilos paso a paso';
 }
 
-/* Conmutador Didáctico de la Envolvente Cuadrática f(x) */
 $('#bCurve').onclick=function(){
   S.curve=!S.curve;
   this.setAttribute('aria-pressed', S.curve);
@@ -409,11 +408,19 @@ function step(t){
   requestAnimationFrame(step);
 }
 
+/* Personaje */
 var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
 var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
-var charPos={x:70,y:70},charDrag=false,charOffset={x:0,y:0};
 
-function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+')')}
+var isInitMobile = window.innerWidth < 480;
+var charPos={x: isInitMobile ? 45 : 70, y: isInitMobile ? 45 : 70};
+var charDrag=false,charOffset={x:0,y:0};
+
+function updateCharPos(){
+  var isMobile = (svg.clientWidth || window.innerWidth) < 480;
+  var scale = isMobile ? 0.72 : 1.0;
+  ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+') scale('+scale+')');
+}
 
 function say(texto){
   var nom=S.charName||'Tri';
@@ -466,14 +473,15 @@ ch.addEventListener('pointerdown',function(e){
 ch.addEventListener('pointermove',function(e){
   if(!charDrag)return;
   var r=svg.getBoundingClientRect();
-  charPos.x=Math.max(40,Math.min(r.width-40,(e.clientX-r.left)-charOffset.x));
-  charPos.y=Math.max(40,Math.min(r.height-40,(e.clientY-r.top)-charOffset.y));
+  charPos.x=Math.max(30,Math.min(r.width-30,(e.clientX-r.left)-charOffset.x));
+  charPos.y=Math.max(30,Math.min(r.height-30,(e.clientY-r.top)-charOffset.y));
   updateCharPos();
 });
 
 ch.addEventListener('pointerup',function(){charDrag=false});
 ch.addEventListener('pointercancel',function(){charDrag=false});
 
+/* LÓGICA DE OCULTAR / MOSTRAR CONTROLES */
 var panelOpen=true;
 var toggleBtn=$('#panelToggleBtn');
 var ctrlPanel=$('#ctrl');
@@ -495,8 +503,8 @@ toggleBtn.addEventListener('click',function(e){
     toggleBtn.style.bottom='14px';
   }
 
-  setTimeout(function(){ render(); }, 50);
-  setTimeout(function(){ render(); }, 200);
+  setTimeout(function(){ render(); updateCharPos(); }, 50);
+  setTimeout(function(){ render(); updateCharPos(); }, 200);
 });
 
 var bob=0;
@@ -508,8 +516,16 @@ setInterval(function(){
   }
 },50);
 
-new ResizeObserver(render).observe(svg);
-window.addEventListener('resize',render);
+new ResizeObserver(function(){
+  render();
+  updateCharPos();
+}).observe(svg);
+
+window.addEventListener('resize',function(){
+  render();
+  updateCharPos();
+});
+
 updateCharPos();
 sync();
 updateCharExpression();
