@@ -2,13 +2,13 @@
 var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
-  n:10,
-  visibleLines:1,
+  n:50,
+  visibleLines:10,
   stepPlaying:false,
   stepTimer:null,
   zoom:1.0,
   quads:{I:true, II:false, III:true, IV:false},
-  curve:true,
+  curve:false,
   grid:true,
   anim:false,
   col:{},
@@ -22,7 +22,7 @@ var svg=$('#cv'),scene=$('#scene'),hd=$('#hd'),V={ox:0,oy:0,sc:1};
 var rad=function(d){return d*Math.PI/180};
 
 var DEF={ex:'#1d4ed8',ey:'#0f766e',curve:'#ff4d6d',ang:'#f59e0b'};
-var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Curva Envolvente',ang:'Ángulo'};
+var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Envolvente Cuadrática f(x)',ang:'Ángulo'};
 var PAL=['#1d4ed8','#0f766e','#16a34a','#f59e0b','#ff4d6d','#c026d3','#7c3aed','#17214d'];
 
 var PREGUNTAS=[
@@ -105,7 +105,7 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
-  /* 3. RECTAS Y CURVAS */
+  /* 3. RECTAS, ENVOLVENTE Y TANGENTES */
   var quadSigns={
     'I':{sx:1,sy:1},
     'II':{sx:-1,sy:1},
@@ -123,7 +123,7 @@ function render(){
       o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 1.8);
     }
 
-    if(S.curve && S.visibleLines>=4){
+    if(S.curve && S.visibleLines>=2){
       var dCurve='';
       var maxT=S.visibleLines/n;
       var steps=Math.round(80*maxT);
@@ -132,7 +132,16 @@ function render(){
         var p=P(sx*L*t*t, sy*L*(1-t)*(1-t));
         dCurve+=(i?'L':'M')+pt(p);
       }
-      o+=el('curve_'+qKey, dCurve, 3);
+      o+=el('curve_'+qKey, dCurve, 3.5);
+
+      // Puntos de tangencia exactos Tk
+      for(var k=1; k<=S.visibleLines; k++){
+        var tParam = k / L;
+        var txLoc = L * tParam * tParam;
+        var tyLoc = L * (1 - tParam) * (1 - tParam);
+        var ptContact = P(sx * txLoc, sy * tyLoc);
+        o+='<circle cx="'+ptContact[0].toFixed(1)+'" cy="'+ptContact[1].toFixed(1)+'" r="3.2" fill="#ff4d6d" stroke="#ffffff" stroke-width="1.2" style="pointer-events:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));"/>';
+      }
     }
   });
 
@@ -169,11 +178,11 @@ function render(){
     o+=angleBadge(tx4, ty4, Math.round(180-S.th));
   }
 
-  /* 5. EJES CARTESIANOS */
+  /* 5. EJES */
   o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
-  /* 6. MARCAS Y NÚMEROS EN EJES */
+  /* 6. MARCAS Y NÚMEROS */
   var st=n>25?5:n>12?2:1;
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
@@ -204,10 +213,10 @@ function info(id){
   if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal (−'+n+' a +'+n+').</p>';
   if(id==='ey')return '<p><b>Eje Y:</b> Eje móvil a '+th+'° con el semieje +X y '+(180-th)+'° con el semieje −X.</p>';
   if(id.indexOf('curve')===0){
-    return '<p><b>Curva Envolvente (Función Cuadrática emergente):</b></p>' +
+    return '<p><b>Envolvente Cuadrática f(x) (Parábola):</b></p>' +
            '<p>Ecuación en coordenadas locales: <code>√x + √y = √'+L+'</code></p>' +
            '<p>Forma cuadrática implícita: <code>(x − y)² − '+(2*L)+'(x + y) + '+(L*L)+' = 0</code></p>' +
-           '<p><i>Aunque cada hilo individual responde a una ecuación de primer grado (recta), la frontera envolvente define una curva cuadrática de segundo grado.</i></p>';
+           '<p><i>Cada punto rojo señala la tangencia estricta donde cada recta toca a la curva f(x) sin cortarla.</i></p>';
   }
   if(isLine(id)){
     var parts=id.split('_');
@@ -300,6 +309,19 @@ function stopStepPlay(){
   $('#bStepPlay').textContent='▶ Tejer hilos paso a paso';
 }
 
+/* Conmutador Didáctico de la Envolvente Cuadrática f(x) */
+$('#bCurve').onclick=function(){
+  S.curve=!S.curve;
+  this.setAttribute('aria-pressed', S.curve);
+  this.classList.toggle('on', S.curve);
+  if(S.curve){
+    say("¡Mirá los puntos rojos! La curva f(x) es tangente a cada recta y define la parábola envolvente.");
+  } else {
+    say("Envolvente oculta. Observá cómo las rectas individuales van insinuando la curva.");
+  }
+  render();
+};
+
 $('#pre').innerHTML='';
 [0, 60, 90, 120, 180].forEach(function(a){
   var b=document.createElement('button');
@@ -357,7 +379,7 @@ $('#qClear').onclick=function(){
 };
 
 function tog(id,key){$(id).onclick=function(){S[key]=!S[key];this.setAttribute('aria-pressed',S[key]);if(key==='anim'){if(S.anim)loop()}render()}}
-tog('#bCurve','curve');tog('#bGrid','grid');tog('#bAnim','anim');
+tog('#bGrid','grid');tog('#bAnim','anim');
 $('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
 function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
 
@@ -473,12 +495,8 @@ toggleBtn.addEventListener('click',function(e){
     toggleBtn.style.bottom='14px';
   }
 
-  setTimeout(function(){
-    render();
-  }, 50);
-  setTimeout(function(){
-    render();
-  }, 200);
+  setTimeout(function(){ render(); }, 50);
+  setTimeout(function(){ render(); }, 200);
 });
 
 var bob=0;

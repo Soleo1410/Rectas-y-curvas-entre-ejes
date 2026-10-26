@@ -97,6 +97,10 @@ button{font:inherit;font-size:.85rem;border:1.5px solid var(--line);background:#
 button:focus-visible,input:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
 button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink);color:#fff}
 
+/* Estilo destacado para el botón de la envolvente */
+.btn-highlight{border-color:var(--acc);color:var(--acc);font-weight:600}
+.btn-highlight.on{background:var(--acc);border-color:var(--acc);color:#fff}
+
 .btn-sub{font-size:0.78rem;padding:4px 8px;background:#f1f5f9;border:1px dashed var(--line);color:var(--mut)}
 
 #sheet h2{font-size:1.05rem;margin:0 0 8px;display:flex;align-items:center;gap:8px}

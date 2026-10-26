@@ -51,7 +51,7 @@
     <g id="scene"></g>
     <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
     
-    <g id="char" transform="translate(80, 80)" style="cursor: grab;">
+    <g id="char" transform="translate(70, 70)" style="cursor: grab;">
       <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
       <g id="char-feet">
         <ellipse id="foot-l" cx="-16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
@@ -103,6 +103,8 @@
   <div class="btns">
     <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
     <button class="chip" id="bStepReset">Reiniciar tejido</button>
+    <!-- Botón con la denominación pedagógica oficial -->
+    <button class="chip btn-highlight" id="bCurve" aria-pressed="false">Mostrar Envolvente Cuadrática f(x)</button>
   </div>
 
   <div class="row">
@@ -118,7 +120,6 @@
   </div>
 
   <div class="btns">
-    <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
     <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
     <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
     <button class="chip" id="bReset">Restablecer colores</button>

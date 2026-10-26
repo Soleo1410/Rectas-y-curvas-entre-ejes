@@ -14,7 +14,6 @@
     h1{font-size:1.05rem;margin:0;letter-spacing:-.01em}
     header p{margin:2px 0 0;font-size:.78rem;color:var(--mut)}
 
-    /* Contenedor que ocupa todo el espacio disponible */
     .canvas-wrap{position:relative;flex:1;min-height:0;width:100%;overflow:hidden}
     #cv{width:100%;height:100%;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
     #cv text{font-family:inherit;font-size:11px;fill:var(--mut);pointer-events:none}
@@ -25,7 +24,7 @@
     .dim{opacity:.12}
     #hd{cursor:grab;touch-action:none}
 
-    /* Botones de Zoom discretos arriba a la derecha */
+    /* Botones de Zoom */
     .zoom-controls{
       position:absolute;
       top:10px;
@@ -55,7 +54,7 @@
     .zoom-btn:hover{background:#ffffff}
     .zoom-btn:active{transform:scale(0.95)}
 
-    /* Botón flotante para ocultar / mostrar controles */
+    /* Botón Flotante para Ocultar / Mostrar Controles */
     #panelToggleBtn{
       position:absolute;
       bottom:12px;
@@ -79,7 +78,7 @@
     #panelToggleBtn:hover{background:#1e293b}
     #panelToggleBtn:active{transform:translateX(-50%) scale(0.96)}
 
-    /* Panel inferior */
+    /* Panel Inferior */
     .bottom{
       background:var(--card);
       border-radius:20px 20px 0 0;
@@ -91,7 +90,6 @@
       overflow-y:auto;
       transition:all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    /* Clase que oculta el panel completamente */
     .bottom.collapsed{
       display:none !important;
     }
@@ -108,6 +106,9 @@
     button{font:inherit;font-size:.85rem;border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
     button:focus-visible,input:focus-visible{outline:3px solid #7aa2ff;outline-offset:2px}
     button[aria-pressed=true],button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+
+    .btn-highlight{border-color:var(--acc);color:var(--acc);font-weight:600}
+    .btn-highlight.on{background:var(--acc);border-color:var(--acc);color:#fff}
 
     .btn-sub{font-size:0.78rem;padding:4px 8px;background:#f1f5f9;border:1px dashed var(--line);color:var(--mut)}
 
@@ -129,7 +130,6 @@
     }
     #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
 
-    /* Cuadro de diálogo HTML flexible adaptable al texto */
     .bubble-card{
       background:#ffffff;
       border:2px solid #17214d;
@@ -154,14 +154,12 @@
 </header>
 
 <div class="canvas-wrap">
-  <!-- Botones de Zoom -->
   <div class="zoom-controls">
     <button class="zoom-btn" id="zoomIn" title="Acercar (Zoom +)">+</button>
     <button class="zoom-btn" id="zoomReset" title="Restablecer tamaño" style="font-size:11px;">1:1</button>
     <button class="zoom-btn" id="zoomOut" title="Alejar (Zoom −)">−</button>
   </div>
 
-  <!-- Botón Flotante para Alternar Panel -->
   <button id="panelToggleBtn">
     <span id="panelToggleText">Ocultar controles</span> <span id="panelToggleIcon">▼</span>
   </button>
@@ -193,8 +191,7 @@
     <g id="scene"></g>
     <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
     
-    <!-- Personaje Triángulo -->
-    <g id="char" transform="translate(80, 80)" style="cursor: grab;">
+    <g id="char" transform="translate(70, 70)" style="cursor: grab;">
       <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
       <g id="char-feet">
         <ellipse id="foot-l" cx="-16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
@@ -216,7 +213,6 @@
       <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
       <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
       
-      <!-- Globo de diálogo adaptable -->
       <g id="bubble" transform="translate(24, -68)">
         <polygon points="4,32 -6,40 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.5"/>
         <foreignObject x="0" y="-12" width="290" height="96">
@@ -229,7 +225,6 @@
   </svg>
 </div>
 
-<!-- Panel de Control Inferior -->
 <section class="bottom" id="ctrl">
   <div class="row">
     <label for="th">Ángulo</label>
@@ -248,6 +243,8 @@
   <div class="btns">
     <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
     <button class="chip" id="bStepReset">Reiniciar tejido</button>
+    <!-- Botón exacto de la consigna didáctica -->
+    <button class="chip btn-highlight" id="bCurve" aria-pressed="false">Mostrar Envolvente Cuadrática f(x)</button>
   </div>
 
   <div class="row">
@@ -263,7 +260,6 @@
   </div>
 
   <div class="btns">
-    <button class="chip" id="bCurve" aria-pressed="true">Curva</button>
     <button class="chip" id="bGrid" aria-pressed="true">Cuadrícula</button>
     <button class="chip" id="bAnim" aria-pressed="false">Animar ángulo</button>
     <button class="chip" id="bReset">Restablecer colores</button>
@@ -293,13 +289,13 @@
 var $=function(s){return document.querySelector(s)};
 var S={
   th:90,
-  n:50,              // Capacidad máxima de hilos
-  visibleLines:10,   // Inicio con 10 hilos
+  n:50,
+  visibleLines:10,
   stepPlaying:false,
   stepTimer:null,
   zoom:1.0,
   quads:{I:true, II:false, III:true, IV:false},
-  curve:true,
+  curve:false, // INICIA APAGADA para cumplir la consigna de experimentación
   grid:true,
   anim:false,
   col:{},
@@ -313,7 +309,7 @@ var svg=$('#cv'),scene=$('#scene'),hd=$('#hd'),V={ox:0,oy:0,sc:1};
 var rad=function(d){return d*Math.PI/180};
 
 var DEF={ex:'#1d4ed8',ey:'#0f766e',curve:'#ff4d6d',ang:'#f59e0b'};
-var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Curva Envolvente',ang:'Ángulo'};
+var NAME={ex:'Eje X (horizontal)',ey:'Eje Y (inclinado)',curve:'Envolvente Cuadrática f(x)',ang:'Ángulo'};
 var PAL=['#1d4ed8','#0f766e','#16a34a','#f59e0b','#ff4d6d','#c026d3','#7c3aed','#17214d'];
 
 var PREGUNTAS=[
@@ -335,7 +331,6 @@ function name(id){
 
 function render(){
   var w=svg.clientWidth,h=svg.clientHeight;if(!w||!h)return;
-  // L toma el tamaño de los hilos activos para que los ejes siempre queden centrados y proporcionados
   var n=Math.max(10, S.visibleLines), L=n+1;
   var c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
 
@@ -348,7 +343,6 @@ function render(){
   var scX=(w-2*M)/spanX;
   var scY=(h-2*M-20)/spanY;
   
-  // Escala centrada en la pantalla del dispositivo
   var sc=Math.min(scX,scY) * S.zoom;
   V.sc=sc;
   V.ox=w/2;
@@ -398,7 +392,7 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
-  /* 3. RECTAS Y CURVAS */
+  /* 3. RECTAS, ENVOLVENTE Y PUNTOS DE TANGENCIA */
   var quadSigns={
     'I':{sx:1,sy:1},
     'II':{sx:-1,sy:1},
@@ -411,12 +405,14 @@ function render(){
     var sx=quadSigns[qKey].sx;
     var sy=quadSigns[qKey].sy;
 
+    // Hilos individuales (Rectas de 1.º grado)
     for(var j=1;j<=S.visibleLines;j++){
       var id='l_'+qKey+'_'+j;
       o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 1.8);
     }
 
-    if(S.curve && S.visibleLines>=4){
+    // Demostración explícita de la envolvente: Curva + Puntos de Tangencia
+    if(S.curve && S.visibleLines>=2){
       var dCurve='';
       var maxT=S.visibleLines/n;
       var steps=Math.round(80*maxT);
@@ -425,7 +421,16 @@ function render(){
         var p=P(sx*L*t*t, sy*L*(1-t)*(1-t));
         dCurve+=(i?'L':'M')+pt(p);
       }
-      o+=el('curve_'+qKey, dCurve, 3);
+      o+=el('curve_'+qKey, dCurve, 3.5, 'stroke-dasharray="0"');
+
+      // Puntos de contacto donde la recta es estrictamente tangente a la curva
+      for(var k=1; k<=S.visibleLines; k++){
+        var tParam = k / L;
+        var txLoc = L * tParam * tParam;
+        var tyLoc = L * (1 - tParam) * (1 - tParam);
+        var ptContact = P(sx * txLoc, sy * tyLoc);
+        o+='<circle cx="'+ptContact[0].toFixed(1)+'" cy="'+ptContact[1].toFixed(1)+'" r="3.2" fill="#ff4d6d" stroke="#ffffff" stroke-width="1.2" style="pointer-events:none; filter:drop-shadow(0 1px 2px rgba(0,0,0,0.3));"/>';
+      }
     }
   });
 
@@ -466,7 +471,7 @@ function render(){
   o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
-  /* 6. MARCAS Y NÚMEROS EN EJES (Espaciado inteligente) */
+  /* 6. MARCAS Y NÚMEROS */
   var st=n>25?5:n>12?2:1;
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
@@ -497,10 +502,10 @@ function info(id){
   if(id==='ex')return '<p><b>Eje X:</b> Eje horizontal (−'+n+' a +'+n+').</p>';
   if(id==='ey')return '<p><b>Eje Y:</b> Eje móvil a '+th+'° con el semieje +X y '+(180-th)+'° con el semieje −X.</p>';
   if(id.indexOf('curve')===0){
-    return '<p><b>Curva Envolvente (Función Cuadrática emergente):</b></p>' +
+    return '<p><b>Envolvente Cuadrática f(x) (Parábola):</b></p>' +
            '<p>Ecuación en coordenadas locales: <code>√x + √y = √'+L+'</code></p>' +
            '<p>Forma cuadrática implícita: <code>(x − y)² − '+(2*L)+'(x + y) + '+(L*L)+' = 0</code></p>' +
-           '<p><i>Aunque cada hilo individual responde a una ecuación de primer grado (recta), la frontera envolvente define una curva cuadrática de segundo grado.</i></p>';
+           '<p><i>Cada punto rojo indica la tangencia exacta donde la recta toca a la curva sin cortarla.</i></p>';
   }
   if(isLine(id)){
     var parts=id.split('_');
@@ -557,7 +562,6 @@ function sync(){
 }
 $('#th').addEventListener('input',function(e){S.anim=false;pa();S.th=+e.target.value;sync();updateCharExpression()});
 
-/* Tejido rápido */
 $('#visibleLines').addEventListener('input',function(e){
   stopStepPlay();
   S.visibleLines=+e.target.value;
@@ -593,6 +597,19 @@ function stopStepPlay(){
   clearInterval(S.stepTimer);
   $('#bStepPlay').textContent='▶ Tejer hilos paso a paso';
 }
+
+/* Control Didáctico de la Envolvente Cuadrática f(x) */
+$('#bCurve').onclick=function(){
+  S.curve=!S.curve;
+  this.setAttribute('aria-pressed', S.curve);
+  this.classList.toggle('on', S.curve);
+  if(S.curve){
+    say("¡Mirá los puntos rojos! La curva f(x) es tangente a cada recta y define la parábola envolvente.");
+  } else {
+    say("Envolvente oculta. Observá cómo las rectas individuales van insinuando la curva.");
+  }
+  render();
+};
 
 $('#pre').innerHTML='';
 [0, 60, 90, 120, 180].forEach(function(a){
@@ -651,7 +668,7 @@ $('#qClear').onclick=function(){
 };
 
 function tog(id,key){$(id).onclick=function(){S[key]=!S[key];this.setAttribute('aria-pressed',S[key]);if(key==='anim'){if(S.anim)loop()}render()}}
-tog('#bCurve','curve');tog('#bGrid','grid');tog('#bAnim','anim');
+tog('#bGrid','grid');tog('#bAnim','anim');
 $('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
 function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
 
@@ -681,7 +698,6 @@ function step(t){
   requestAnimationFrame(step);
 }
 
-/* Personaje */
 var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
 var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
 var charPos={x:70,y:70},charDrag=false,charOffset={x:0,y:0};
@@ -747,7 +763,7 @@ ch.addEventListener('pointermove',function(e){
 ch.addEventListener('pointerup',function(){charDrag=false});
 ch.addEventListener('pointercancel',function(){charDrag=false});
 
-/* LÓGICA DE OCULTAR / MOSTRAR CONTROLES CON RE-CENTRADO */
+/* LÓGICA DE OCULTAR / MOSTRAR CONTROLES */
 var panelOpen=true;
 var toggleBtn=$('#panelToggleBtn');
 var ctrlPanel=$('#ctrl');
@@ -769,13 +785,8 @@ toggleBtn.addEventListener('click',function(e){
     toggleBtn.style.bottom='14px';
   }
 
-  // Fuerza al navegador a recalcular el tamaño y re-centrar el plano
-  setTimeout(function(){
-    render();
-  }, 50);
-  setTimeout(function(){
-    render();
-  }, 200);
+  setTimeout(function(){ render(); }, 50);
+  setTimeout(function(){ render(); }, 200);
 });
 
 var bob=0;
