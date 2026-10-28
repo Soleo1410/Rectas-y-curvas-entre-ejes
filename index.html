@@ -26,55 +26,130 @@
 
   <svg id="cv" role="img" aria-label="Ejes cartesianos y rectas envolventes">
     <defs>
-      <filter id="shadow3d" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.35"/>
+      <!-- Filtros de sombra y profundidad 3D -->
+      <filter id="shadow3d" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow dx="0" dy="10" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.38"/>
       </filter>
-      <linearGradient id="bodyGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0.15"/>
+      
+      <!-- Gradientes volumétricos de la Pirámide -->
+      <linearGradient id="pyrLightFace" x1="20%" y1="0%" x2="80%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
+        <stop offset="50%" stop-color="#ffffff" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.3"/>
       </linearGradient>
-      <linearGradient id="bodyGradRight" x1="100%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#000000" stop-opacity="0.1"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
+      <linearGradient id="pyrDarkFace" x1="100%" y1="10%" x2="0%" y2="90%">
+        <stop offset="0%" stop-color="#000000" stop-opacity="0.05"/>
+        <stop offset="60%" stop-color="#000000" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.7"/>
       </linearGradient>
-      <linearGradient id="bodyGradBottom" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
+      <linearGradient id="pyrBottomFace" x1="50%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stop-color="#000000" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.65"/>
       </linearGradient>
-      <radialGradient id="eyeGrad" cx="35%" cy="35%" r="65%">
+
+      <!-- Iluminación de ojos -->
+      <radialGradient id="eyeSclera" cx="40%" cy="35%" r="65%">
         <stop offset="0%" stop-color="#ffffff"/>
-        <stop offset="80%" stop-color="#cbd5e1"/>
+        <stop offset="75%" stop-color="#e2e8f0"/>
         <stop offset="100%" stop-color="#94a3b8"/>
+      </radialGradient>
+      <radialGradient id="eyeIris" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stop-color="#38bdf8"/>
+        <stop offset="55%" stop-color="#0284c7"/>
+        <stop offset="100%" stop-color="#0f172a"/>
+      </radialGradient>
+      
+      <!-- Textura de manijas de arrastre -->
+      <radialGradient id="handleGrad" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="45%" stop-color="#f8fafc"/>
+        <stop offset="85%" stop-color="#cbd5e1"/>
+        <stop offset="100%" stop-color="#64748b"/>
       </radialGradient>
     </defs>
 
     <g id="scene"></g>
-    <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
     
+    <!-- Manija Superior (+Y) -->
+    <g id="hd-top" class="axis-handle" title="Arrastrar para rotar el eje Y (Arriba)">
+      <circle r="26" fill="transparent"/>
+      <circle r="13" fill="url(#handleGrad)" stroke="#0f766e" stroke-width="3" filter="url(#shadow3d)"/>
+      <circle r="5" fill="#0f766e"/>
+      <path d="M -8 -17 L 8 -17 M 0 -21 L 0 -13" stroke="#0f766e" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
+
+    <!-- Manija Inferior (-Y) -->
+    <g id="hd-bottom" class="axis-handle" title="Arrastrar para rotar el eje Y (Abajo)">
+      <circle r="26" fill="transparent"/>
+      <circle r="13" fill="url(#handleGrad)" stroke="#0f766e" stroke-width="3" filter="url(#shadow3d)"/>
+      <circle r="5" fill="#0f766e"/>
+      <path d="M -8 17 L 8 17" stroke="#0f766e" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- Pirámide Tetraédrica 3D ("Triangulín") -->
     <g id="char" transform="translate(70, 70)" style="cursor: grab;">
-      <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
+      <ellipse id="char-ground-shadow" cx="0" cy="52" rx="46" ry="12" fill="#0f172a" opacity="0.28" filter="url(#shadow3d)"/>
+
       <g id="char-feet">
-        <ellipse id="foot-l" cx="-16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
-        <ellipse id="foot-r" cx="16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
+        <g id="foot-group-l">
+          <ellipse cx="-18" cy="46" rx="11" ry="7" fill="#d97706" stroke="#78350f" stroke-width="1.6"/>
+          <ellipse cx="-16" cy="44" rx="5" ry="2.5" fill="#fde68a" opacity="0.6"/>
+        </g>
+        <g id="foot-group-r">
+          <ellipse cx="18" cy="46" rx="11" ry="7" fill="#d97706" stroke="#78350f" stroke-width="1.6"/>
+          <ellipse cx="20" cy="44" rx="5" ry="2.5" fill="#fde68a" opacity="0.6"/>
+        </g>
       </g>
-      <path id="arm-l" d="M -24 16 Q -42 12 -34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <path id="arm-r" d="M 24 16 Q 42 12 34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <g id="char-body-group" filter="url(#shadow3d)">
-        <polygon id="char-base" points="0,-40 -40,38 40,38" fill="#2563eb" stroke="#1e3a8a" stroke-width="2.5" stroke-linejoin="round"/>
-        <polygon points="0,-40 -40,38 0,38" fill="url(#bodyGradLeft)"/>
-        <polygon points="0,-40 0,38 40,38" fill="url(#bodyGradRight)"/>
-        <polygon points="-40,38 40,38 0,30" fill="url(#bodyGradBottom)"/>
+
+      <g id="char-arms">
+        <path id="arm-l" d="M -26 18 Q -46 14 -38 -2" stroke="#d97706" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle id="hand-l" cx="-38" cy="-2" r="5" fill="#f59e0b" stroke="#78350f" stroke-width="1.5"/>
+        
+        <path id="arm-r" d="M 26 18 Q 46 14 38 -2" stroke="#d97706" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle id="hand-r" cx="38" cy="-2" r="5" fill="#f59e0b" stroke="#78350f" stroke-width="1.5"/>
       </g>
-      <ellipse cx="-11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
-      <ellipse cx="11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
-      <circle id="pupil-l" cx="-10" cy="7" r="3.5" fill="#0f172a"/>
-      <circle id="pupil-r" cx="12" cy="7" r="3.5" fill="#0f172a"/>
-      <circle cx="-12" cy="4" r="1.5" fill="#ffffff"/>
-      <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
-      <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
-      
-      <g id="bubble" transform="translate(24, -68)">
-        <polygon points="4,32 -6,40 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.5"/>
+
+      <g id="char-body-3d" filter="url(#shadow3d)">
+        <polygon id="pyr-face-left" points="0,-48 -44,42 0,38" fill="#2563eb" stroke="#1e3a8a" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon id="pyr-face-right" points="0,-48 0,38 44,42" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon id="pyr-face-bottom" points="-44,42 0,38 44,42 0,48" fill="#1e3a8a" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round"/>
+
+        <polygon points="0,-48 -44,42 0,38" fill="url(#pyrLightFace)"/>
+        <polygon points="0,-48 0,38 44,42" fill="url(#pyrDarkFace)"/>
+        <polygon points="-44,42 0,38 44,42 0,48" fill="url(#pyrBottomFace)"/>
+        
+        <line x1="0" y1="-48" x2="0" y2="38" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      </g>
+
+      <g id="char-eyes" transform="translate(0, 4)">
+        <g transform="translate(-13, 0)">
+          <ellipse cx="0" cy="0" rx="9" ry="11" fill="url(#eyeSclera)" stroke="#0f172a" stroke-width="1.4"/>
+          <g class="char-eye-pupil">
+            <circle cx="1" cy="0" r="5.2" fill="url(#eyeIris)"/>
+            <circle cx="1" cy="0" r="2.8" fill="#090d16"/>
+            <circle cx="-1" cy="-2.5" r="1.8" fill="#ffffff"/>
+            <circle cx="2.5" cy="1.5" r="0.9" fill="#ffffff"/>
+          </g>
+        </g>
+        
+        <g transform="translate(13, 0)">
+          <ellipse cx="0" cy="0" rx="9" ry="11" fill="url(#eyeSclera)" stroke="#0f172a" stroke-width="1.4"/>
+          <g class="char-eye-pupil">
+            <circle cx="1" cy="0" r="5.2" fill="url(#eyeIris)"/>
+            <circle cx="1" cy="0" r="2.8" fill="#090d16"/>
+            <circle cx="-1" cy="-2.5" r="1.8" fill="#ffffff"/>
+            <circle cx="2.5" cy="1.5" r="0.9" fill="#ffffff"/>
+          </g>
+        </g>
+
+        <path id="brow-l" d="M -21 -13 Q -13 -16 -6 -12" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <path id="brow-r" d="M 6 -12 Q 13 -16 21 -13" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <path id="char-mouth" d="M -9 26 Q 0 34 9 26" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+      <g id="bubble" transform="translate(24, -74)">
+        <polygon points="4,32 -6,42 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.6"/>
         <foreignObject x="0" y="-12" width="290" height="96">
           <div xmlns="http://www.w3.org/1999/xhtml" id="char-speech" class="bubble-card">
             ¡Hola! Investigemos juntos
@@ -103,7 +178,6 @@
   <div class="btns">
     <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
     <button class="chip" id="bStepReset">Reiniciar tejido</button>
-    <!-- Botón con la denominación pedagógica oficial -->
     <button class="chip btn-highlight" id="bCurve" aria-pressed="false">Mostrar Envolvente Cuadrática f(x)</button>
   </div>
 

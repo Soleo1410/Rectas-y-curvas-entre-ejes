@@ -19,10 +19,13 @@
     #cv text{font-family:inherit;font-size:11px;fill:var(--mut);pointer-events:none}
     #cv .quad-label{font-size:13px;font-weight:700;fill:#94a3b8;opacity:0.45;transition:opacity 0.2s, fill 0.2s}
     #cv .quad-label.quad-active{fill:#334155;opacity:0.95}
-    #cv .hit{stroke:transparent;stroke-width:20;fill:none;stroke-linecap:round;cursor:pointer}
+    #cv .hit{stroke:transparent;stroke-width:24;fill:none;stroke-linecap:round;cursor:pointer}
     #cv .vis{fill:none;stroke-linecap:round;pointer-events:none}
     .dim{opacity:.12}
-    #hd{cursor:grab;touch-action:none}
+    
+    /* Manijas de agarre del eje Y (superior e inferior) */
+    .axis-handle{cursor:grab;touch-action:none}
+    .axis-handle:active{cursor:grabbing}
 
     /* Botones de Zoom */
     .zoom-controls{
@@ -54,7 +57,7 @@
     .zoom-btn:hover{background:#ffffff}
     .zoom-btn:active{transform:scale(0.95)}
 
-    /* Botón Flotante para Ocultar / Mostrar Controles */
+    /* Botón flotante para Ocultar / Mostrar controles */
     #panelToggleBtn{
       position:absolute;
       bottom:12px;
@@ -78,7 +81,7 @@
     #panelToggleBtn:hover{background:#1e293b}
     #panelToggleBtn:active{transform:translateX(-50%) scale(0.96)}
 
-    /* Panel Inferior */
+    /* Panel inferior */
     .bottom{
       background:var(--card);
       border-radius:20px 20px 0 0;
@@ -121,14 +124,16 @@
     .sw button.c{width:34px;height:34px;padding:0;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1.5px var(--line)}
     [hidden]{display:none!important}
 
-    #char{transition:transform 0.05s ease-out;user-select:none}
+    /* Personaje con efectos 3D interactivos */
+    #char{user-select:none;transition:filter 0.2s}
+    #char:hover{filter:drop-shadow(0 8px 16px rgba(15,23,42,0.22))}
     #char:active{cursor:grabbing !important}
-    #char-base{transition:fill 0.3s ease}
-    @keyframes blink{
-      0%, 90%, 100%{transform:scaleY(1)}
-      95%{transform:scaleY(0.1)}
+    
+    @keyframes charBlink{
+      0%, 92%, 100%{transform:scaleY(1)}
+      95%{transform:scaleY(0.08)}
     }
-    #pupil-l,#pupil-r{transform-origin:center;animation:blink 4s infinite}
+    .char-eye-pupil{transform-origin:center;animation:charBlink 4.2s infinite}
 
     .bubble-card{
       background:#ffffff;
@@ -166,55 +171,147 @@
 
   <svg id="cv" role="img" aria-label="Ejes cartesianos y rectas envolventes">
     <defs>
-      <filter id="shadow3d" x="-30%" y="-30%" width="160%" height="160%">
-        <feDropShadow dx="0" dy="8" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.35"/>
+      <!-- Filtros de relieve, sombra y brillo 3D -->
+      <filter id="shadow3d" x="-40%" y="-40%" width="180%" height="180%">
+        <feDropShadow dx="0" dy="10" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.38"/>
       </filter>
-      <linearGradient id="bodyGradLeft" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0.15"/>
+      <filter id="glow3d" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      
+      <!-- Gradientes volumétricos de la Pirámide -->
+      <linearGradient id="pyrLightFace" x1="20%" y1="0%" x2="80%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
+        <stop offset="50%" stop-color="#ffffff" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.3"/>
       </linearGradient>
-      <linearGradient id="bodyGradRight" x1="100%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#000000" stop-opacity="0.1"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
+      <linearGradient id="pyrDarkFace" x1="100%" y1="10%" x2="0%" y2="90%">
+        <stop offset="0%" stop-color="#000000" stop-opacity="0.05"/>
+        <stop offset="60%" stop-color="#000000" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.7"/>
       </linearGradient>
-      <linearGradient id="bodyGradBottom" x1="0%" y1="0%" x2="0%" y2="100%">
-        <stop offset="0%" stop-color="#ffffff" stop-opacity="0.2"/>
-        <stop offset="100%" stop-color="#000000" stop-opacity="0.45"/>
+      <linearGradient id="pyrBottomFace" x1="50%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stop-color="#000000" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#000000" stop-opacity="0.65"/>
       </linearGradient>
-      <radialGradient id="eyeGrad" cx="35%" cy="35%" r="65%">
+
+      <!-- Iluminación de los ojos -->
+      <radialGradient id="eyeSclera" cx="40%" cy="35%" r="65%">
         <stop offset="0%" stop-color="#ffffff"/>
-        <stop offset="80%" stop-color="#cbd5e1"/>
+        <stop offset="75%" stop-color="#e2e8f0"/>
         <stop offset="100%" stop-color="#94a3b8"/>
+      </radialGradient>
+      <radialGradient id="eyeIris" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stop-color="#38bdf8"/>
+        <stop offset="55%" stop-color="#0284c7"/>
+        <stop offset="100%" stop-color="#0f172a"/>
+      </radialGradient>
+      
+      <!-- Textura de las manillas de arrastre de los ejes -->
+      <radialGradient id="handleGrad" cx="35%" cy="35%" r="65%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="45%" stop-color="#f8fafc"/>
+        <stop offset="85%" stop-color="#cbd5e1"/>
+        <stop offset="100%" stop-color="#64748b"/>
       </radialGradient>
     </defs>
 
     <g id="scene"></g>
-    <g id="hd"><circle r="24" fill="transparent"/><circle r="12" fill="#fff" stroke="#17214d" stroke-width="3"/><circle r="4.5" fill="#17214d"/></g>
     
+    <!-- Manija Superior (+Y) -->
+    <g id="hd-top" class="axis-handle" title="Arrastrar para rotar el eje Y (Arriba)">
+      <circle r="26" fill="transparent"/>
+      <circle r="13" fill="url(#handleGrad)" stroke="#0f766e" stroke-width="3" filter="url(#shadow3d)"/>
+      <circle r="5" fill="#0f766e"/>
+      <path d="M -8 -17 L 8 -17 M 0 -21 L 0 -13" stroke="#0f766e" stroke-width="1.8" stroke-linecap="round"/>
+    </g>
+
+    <!-- Manija Inferior (-Y) -->
+    <g id="hd-bottom" class="axis-handle" title="Arrastrar para rotar el eje Y (Abajo)">
+      <circle r="26" fill="transparent"/>
+      <circle r="13" fill="url(#handleGrad)" stroke="#0f766e" stroke-width="3" filter="url(#shadow3d)"/>
+      <circle r="5" fill="#0f766e"/>
+      <path d="M -8 17 L 8 17" stroke="#0f766e" stroke-width="2" stroke-linecap="round"/>
+    </g>
+
+    <!-- Personaje Pirámide 3D ("Triangulín") -->
     <g id="char" transform="translate(70, 70)" style="cursor: grab;">
-      <ellipse cx="0" cy="46" rx="42" ry="10" fill="#0f172a" opacity="0.25" />
+      <!-- Sombra de suelo interactiva -->
+      <ellipse id="char-ground-shadow" cx="0" cy="52" rx="46" ry="12" fill="#0f172a" opacity="0.28" filter="url(#shadow3d)"/>
+
+      <!-- Pies articulados con sombra propia -->
       <g id="char-feet">
-        <ellipse id="foot-l" cx="-16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
-        <ellipse id="foot-r" cx="16" cy="42" rx="10" ry="6" fill="#d97706" stroke="#78350f" stroke-width="1.5"/>
+        <g id="foot-group-l">
+          <ellipse cx="-18" cy="46" rx="11" ry="7" fill="#d97706" stroke="#78350f" stroke-width="1.6"/>
+          <ellipse cx="-16" cy="44" rx="5" ry="2.5" fill="#fde68a" opacity="0.6"/>
+        </g>
+        <g id="foot-group-r">
+          <ellipse cx="18" cy="46" rx="11" ry="7" fill="#d97706" stroke="#78350f" stroke-width="1.6"/>
+          <ellipse cx="20" cy="44" rx="5" ry="2.5" fill="#fde68a" opacity="0.6"/>
+        </g>
       </g>
-      <path id="arm-l" d="M -24 16 Q -42 12 -34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <path id="arm-r" d="M 24 16 Q 42 12 34 2" stroke="#d97706" stroke-width="5" stroke-linecap="round" fill="none"/>
-      <g id="char-body-group" filter="url(#shadow3d)">
-        <polygon id="char-base" points="0,-40 -40,38 40,38" fill="#2563eb" stroke="#1e3a8a" stroke-width="2.5" stroke-linejoin="round"/>
-        <polygon points="0,-40 -40,38 0,38" fill="url(#bodyGradLeft)"/>
-        <polygon points="0,-40 0,38 40,38" fill="url(#bodyGradRight)"/>
-        <polygon points="-40,38 40,38 0,30" fill="url(#bodyGradBottom)"/>
+
+      <!-- Brazos dinámicos en 3D -->
+      <g id="char-arms">
+        <path id="arm-l" d="M -26 18 Q -46 14 -38 -2" stroke="#d97706" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle id="hand-l" cx="-38" cy="-2" r="5" fill="#f59e0b" stroke="#78350f" stroke-width="1.5"/>
+        
+        <path id="arm-r" d="M 26 18 Q 46 14 38 -2" stroke="#d97706" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle id="hand-r" cx="38" cy="-2" r="5" fill="#f59e0b" stroke="#78350f" stroke-width="1.5"/>
       </g>
-      <ellipse cx="-11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
-      <ellipse cx="11" cy="6" rx="7.5" ry="9" fill="url(#eyeGrad)" stroke="#1e293b" stroke-width="1"/>
-      <circle id="pupil-l" cx="-10" cy="7" r="3.5" fill="#0f172a"/>
-      <circle id="pupil-r" cx="12" cy="7" r="3.5" fill="#0f172a"/>
-      <circle cx="-12" cy="4" r="1.5" fill="#ffffff"/>
-      <circle cx="10" cy="4" r="1.5" fill="#ffffff"/>
-      <path id="char-mouth" d="M -8 24 Q 0 31 8 24" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
-      
-      <g id="bubble" transform="translate(24, -68)">
-        <polygon points="4,32 -6,40 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.5"/>
+
+      <!-- Cuerpo: Pirámide tetraédrica con aristas y caras iluminadas -->
+      <g id="char-body-3d" filter="url(#shadow3d)">
+        <!-- Base de color sólido editable -->
+        <polygon id="pyr-face-left" points="0,-48 -44,42 0,38" fill="#2563eb" stroke="#1e3a8a" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon id="pyr-face-right" points="0,-48 0,38 44,42" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5" stroke-linejoin="round"/>
+        <polygon id="pyr-face-bottom" points="-44,42 0,38 44,42 0,48" fill="#1e3a8a" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round"/>
+
+        <!-- Capas de luz y volumen especular -->
+        <polygon points="0,-48 -44,42 0,38" fill="url(#pyrLightFace)"/>
+        <polygon points="0,-48 0,38 44,42" fill="url(#pyrDarkFace)"/>
+        <polygon points="-44,42 0,38 44,42 0,48" fill="url(#pyrBottomFace)"/>
+        
+        <!-- Arista central brillante que resalta la arista 3D -->
+        <line x1="0" y1="-48" x2="0" y2="38" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      </g>
+
+      <!-- Ojos vivos y expresivos -->
+      <g id="char-eyes" transform="translate(0, 4)">
+        <!-- Ojo izquierdo -->
+        <g transform="translate(-13, 0)">
+          <ellipse cx="0" cy="0" rx="9" ry="11" fill="url(#eyeSclera)" stroke="#0f172a" stroke-width="1.4"/>
+          <g class="char-eye-pupil">
+            <circle cx="1" cy="0" r="5.2" fill="url(#eyeIris)"/>
+            <circle cx="1" cy="0" r="2.8" fill="#090d16"/>
+            <circle cx="-1" cy="-2.5" r="1.8" fill="#ffffff"/>
+            <circle cx="2.5" cy="1.5" r="0.9" fill="#ffffff"/>
+          </g>
+        </g>
+        
+        <!-- Ojo derecho -->
+        <g transform="translate(13, 0)">
+          <ellipse cx="0" cy="0" rx="9" ry="11" fill="url(#eyeSclera)" stroke="#0f172a" stroke-width="1.4"/>
+          <g class="char-eye-pupil">
+            <circle cx="1" cy="0" r="5.2" fill="url(#eyeIris)"/>
+            <circle cx="1" cy="0" r="2.8" fill="#090d16"/>
+            <circle cx="-1" cy="-2.5" r="1.8" fill="#ffffff"/>
+            <circle cx="2.5" cy="1.5" r="0.9" fill="#ffffff"/>
+          </g>
+        </g>
+
+        <!-- Cejas móviles de actitud -->
+        <path id="brow-l" d="M -21 -13 Q -13 -16 -6 -12" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <path id="brow-r" d="M 6 -12 Q 13 -16 21 -13" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      </g>
+
+      <!-- Boca amigable y adaptable -->
+      <path id="char-mouth" d="M -9 26 Q 0 34 9 26" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+      <!-- Globo de diálogo adaptable -->
+      <g id="bubble" transform="translate(24, -74)">
+        <polygon points="4,32 -6,42 14,32" fill="#ffffff" stroke="#17214d" stroke-width="1.6"/>
         <foreignObject x="0" y="-12" width="290" height="96">
           <div xmlns="http://www.w3.org/1999/xhtml" id="char-speech" class="bubble-card">
             ¡Hola! Investigemos juntos
@@ -225,6 +322,7 @@
   </svg>
 </div>
 
+<!-- Panel de Control Inferior -->
 <section class="bottom" id="ctrl">
   <div class="row">
     <label for="th">Ángulo</label>
@@ -243,7 +341,6 @@
   <div class="btns">
     <button class="chip" id="bStepPlay">▶ Tejer hilos paso a paso</button>
     <button class="chip" id="bStepReset">Reiniciar tejido</button>
-    <!-- Botón exacto de la consigna didáctica -->
     <button class="chip btn-highlight" id="bCurve" aria-pressed="false">Mostrar Envolvente Cuadrática f(x)</button>
   </div>
 
@@ -295,7 +392,7 @@ var S={
   stepTimer:null,
   zoom:1.0,
   quads:{I:true, II:false, III:true, IV:false},
-  curve:false, // INICIA APAGADA para cumplir la consigna de experimentación
+  curve:false,
   grid:true,
   anim:false,
   col:{},
@@ -305,7 +402,9 @@ var S={
   charName:'Triangulín'
 };
 
-var svg=$('#cv'),scene=$('#scene'),hd=$('#hd'),V={ox:0,oy:0,sc:1};
+var svg=$('#cv'),scene=$('#scene');
+var hdTop=$('#hd-top'),hdBottom=$('#hd-bottom');
+var V={ox:0,oy:0,sc:1};
 var rad=function(d){return d*Math.PI/180};
 
 var DEF={ex:'#1d4ed8',ey:'#0f766e',curve:'#ff4d6d',ang:'#f59e0b'};
@@ -331,6 +430,7 @@ function name(id){
 
 function render(){
   var w=svg.clientWidth,h=svg.clientHeight;if(!w||!h)return;
+  var isMobile = w < 480;
   var n=Math.max(10, S.visibleLines), L=n+1;
   var c=Math.cos(rad(S.th)),s=Math.sin(rad(S.th));
 
@@ -339,9 +439,9 @@ function render(){
   var spanX=Math.max(2*L, maxX-minX);
   var spanY=Math.max(2*L*Math.abs(s), 14);
 
-  var M=30;
+  var M=isMobile ? 22 : 32;
   var scX=(w-2*M)/spanX;
-  var scY=(h-2*M-20)/spanY;
+  var scY=(h-2*M-24)/spanY;
   
   var sc=Math.min(scX,scY) * S.zoom;
   V.sc=sc;
@@ -384,7 +484,7 @@ function render(){
   /* 2. CUADRÍCULA */
   if(S.grid && s>0.04){
     var g='';
-    var step=n>25?5:n>12?2:1;
+    var step=isMobile ? (n>20?10:5) : (n>25?5:(n>12?2:1));
     for(var k=-n;k<=n;k+=step){
       g+=seg(P(k,-n),P(k,n));
       g+=seg(P(-n,k),P(n,k));
@@ -392,7 +492,7 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
-  /* 3. RECTAS, ENVOLVENTE Y PUNTOS DE TANGENCIA */
+  /* 3. RECTAS, ENVOLVENTE Y TANGENCIA */
   var quadSigns={
     'I':{sx:1,sy:1},
     'II':{sx:-1,sy:1},
@@ -405,13 +505,11 @@ function render(){
     var sx=quadSigns[qKey].sx;
     var sy=quadSigns[qKey].sy;
 
-    // Hilos individuales (Rectas de 1.º grado)
     for(var j=1;j<=S.visibleLines;j++){
       var id='l_'+qKey+'_'+j;
       o+=el(id, seg(P(sx*j, 0), P(0, sy*(L-j))), 1.8);
     }
 
-    // Demostración explícita de la envolvente: Curva + Puntos de Tangencia
     if(S.curve && S.visibleLines>=2){
       var dCurve='';
       var maxT=S.visibleLines/n;
@@ -421,9 +519,8 @@ function render(){
         var p=P(sx*L*t*t, sy*L*(1-t)*(1-t));
         dCurve+=(i?'L':'M')+pt(p);
       }
-      o+=el('curve_'+qKey, dCurve, 3.5, 'stroke-dasharray="0"');
+      o+=el('curve_'+qKey, dCurve, 3.5);
 
-      // Puntos de contacto donde la recta es estrictamente tangente a la curva
       for(var k=1; k<=S.visibleLines; k++){
         var tParam = k / L;
         var txLoc = L * tParam * tParam;
@@ -472,7 +569,7 @@ function render(){
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
   /* 6. MARCAS Y NÚMEROS */
-  var st=n>25?5:n>12?2:1;
+  var st = isMobile ? (n > 20 ? 10 : 5) : (n > 25 ? 5 : (n > 12 ? 2 : 1));
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
     var px=P(m,0), py=P(0,m);
@@ -493,8 +590,11 @@ function render(){
 
   scene.innerHTML=o;
 
-  var hp=P(0,L);
-  hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
+  /* Ubicación de los dos agarres (Arriba +Y y Abajo -Y) */
+  var hpTop=P(0, L);
+  var hpBottom=P(0, -L);
+  hdTop.setAttribute('transform','translate('+hpTop[0].toFixed(1)+','+hpTop[1].toFixed(1)+')');
+  hdBottom.setAttribute('transform','translate('+hpBottom[0].toFixed(1)+','+hpBottom[1].toFixed(1)+')');
 }
 
 function info(id){
@@ -505,7 +605,7 @@ function info(id){
     return '<p><b>Envolvente Cuadrática f(x) (Parábola):</b></p>' +
            '<p>Ecuación en coordenadas locales: <code>√x + √y = √'+L+'</code></p>' +
            '<p>Forma cuadrática implícita: <code>(x − y)² − '+(2*L)+'(x + y) + '+(L*L)+' = 0</code></p>' +
-           '<p><i>Cada punto rojo indica la tangencia exacta donde la recta toca a la curva sin cortarla.</i></p>';
+           '<p><i>Cada punto rojo señala la tangencia estricta donde cada recta toca a la curva f(x) sin cortarla.</i></p>';
   }
   if(isLine(id)){
     var parts=id.split('_');
@@ -598,7 +698,6 @@ function stopStepPlay(){
   $('#bStepPlay').textContent='▶ Tejer hilos paso a paso';
 }
 
-/* Control Didáctico de la Envolvente Cuadrática f(x) */
 $('#bCurve').onclick=function(){
   S.curve=!S.curve;
   this.setAttribute('aria-pressed', S.curve);
@@ -672,18 +771,43 @@ tog('#bGrid','grid');tog('#bAnim','anim');
 $('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
 function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
 
-var drag=false;
-hd.addEventListener('pointerdown',function(e){drag=true;S.anim=false;pa();hd.setPointerCapture(e.pointerId);e.preventDefault()});
-hd.addEventListener('pointermove',function(e){if(!drag)return;
-  var r=svg.getBoundingClientRect(),dx=e.clientX-r.left-V.ox,dy=V.oy-(e.clientY-r.top);
-  var deg=Math.atan2(dy,dx)*180/Math.PI;
-  if(deg<0){deg=dx>=0?0:180}
-  S.th=Math.max(0,Math.min(180,deg));
-  sync();
-  updateCharExpression();
-});
-hd.addEventListener('pointerup',function(){drag=false});
-hd.addEventListener('pointercancel',function(){drag=false});
+/* SISTEMA DE ARRASTRE DUAL DE LOS EJES (ARRIBA Y ABAJO) */
+var dragMode = null; // 'top' o 'bottom'
+
+function bindHandle(handleEl, mode){
+  handleEl.addEventListener('pointerdown', function(e){
+    dragMode = mode;
+    S.anim = false;
+    pa();
+    handleEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  
+  handleEl.addEventListener('pointermove', function(e){
+    if(dragMode !== mode) return;
+    var r = svg.getBoundingClientRect();
+    var dx = e.clientX - r.left - V.ox;
+    var dy = V.oy - (e.clientY - r.top);
+    
+    // Si se arrastra la manija inferior, el vector apunta en sentido opuesto
+    if(mode === 'bottom'){
+      dx = -dx;
+      dy = -dy;
+    }
+    
+    var deg = Math.atan2(dy, dx) * 180 / Math.PI;
+    if(deg < 0){ deg = dx >= 0 ? 0 : 180; }
+    S.th = Math.max(0, Math.min(180, deg));
+    sync();
+    updateCharExpression();
+  });
+
+  handleEl.addEventListener('pointerup', function(){ dragMode = null; });
+  handleEl.addEventListener('pointercancel', function(){ dragMode = null; });
+}
+
+bindHandle(hdTop, 'top');
+bindHandle(hdBottom, 'bottom');
 
 var dir=1,last=0;
 function loop(){last=performance.now();requestAnimationFrame(step)}
@@ -698,33 +822,55 @@ function step(t){
   requestAnimationFrame(step);
 }
 
+/* COMPORTAMIENTO Y PERSONALIDAD 3D DE TRIANGULÍN */
 var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
-var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
-var charPos={x:70,y:70},charDrag=false,charOffset={x:0,y:0};
+var armL=$('#arm-l'),armR=$('#arm-r');
+var handL=$('#hand-l'),handR=$('#hand-r');
+var pyrFaceLeft=$('#pyr-face-left'),pyrFaceRight=$('#pyr-face-right');
+var browL=$('#brow-l'),browR=$('#brow-r');
 
-function updateCharPos(){ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+')')}
+var isInitMobile = window.innerWidth < 480;
+var charPos={x: isInitMobile ? 45 : 70, y: isInitMobile ? 45 : 70};
+var charDrag=false,charOffset={x:0,y:0};
+
+function updateCharPos(){
+  var isMobile = (svg.clientWidth || window.innerWidth) < 480;
+  var scale = isMobile ? 0.72 : 1.0;
+  ch.setAttribute('transform','translate('+charPos.x+','+charPos.y+') scale('+scale+')');
+}
 
 function say(texto){
-  var nom=S.charName||'Tri';
+  var nom=S.charName||'Triangulín';
   chSpeech.innerHTML='<strong>'+nom+':</strong> '+texto;
 }
 
 function updateCharExpression(){
   var th=Math.round(S.th);
   if(th===60){
+    chMouth.setAttribute('d','M -9 24 Q 0 36 9 24');
+    browL.setAttribute('d','M -21 -10 Q -13 -18 -6 -14');
+    browR.setAttribute('d','M 6 -14 Q 13 -18 21 -10');
     say("¡Ángulo agudo de 60°! Mirá cómo se comprime la parábola.");
   } else if(th===120){
+    chMouth.setAttribute('d','M -8 24 Q 0 35 8 24');
+    browL.setAttribute('d','M -21 -15 Q -13 -14 -6 -10');
+    browR.setAttribute('d','M 6 -10 Q 13 -14 21 -15');
     say("¡Ángulo obtuso de 120°! Mirá cómo se ensancha.");
   } else if(th===0){
-    chMouth.setAttribute('d','M -6 28 L 6 28');
+    chMouth.setAttribute('d','M -8 28 L 8 28');
+    browL.setAttribute('d','M -20 -12 L -6 -12');
+    browR.setAttribute('d','M 6 -12 L 20 -12');
     say("0° Superpuestos sobre una semirrecta.");
   } else if(th===180){
-    chMouth.setAttribute('d','M -10 22 Q 0 34 10 22 Z');
+    chMouth.setAttribute('d','M -10 24 Q 0 36 10 24 Z');
     say("180° Recta continua.");
   } else if(th===90){
-    chMouth.setAttribute('d','M -8 24 Q 0 31 8 24');
+    chMouth.setAttribute('d','M -9 26 Q 0 34 9 26');
+    browL.setAttribute('d','M -21 -13 Q -13 -16 -6 -12');
+    browR.setAttribute('d','M 6 -12 Q 13 -16 21 -13');
     say("90° Ángulo recto clásico.");
   } else {
+    chMouth.setAttribute('d','M -8 26 Q 0 32 8 26');
     say("Ángulo actual: "+th+"°");
   }
 }
@@ -738,8 +884,12 @@ $('#triName').addEventListener('input',function(e){
   S.charName=e.target.value.trim()||'Tri';
   updateCharExpression();
 });
+
 $('#triColor').addEventListener('input',function(e){
-  baseBody.setAttribute('fill',e.target.value);
+  var col = e.target.value;
+  pyrFaceLeft.setAttribute('fill', col);
+  // Color más profundo para la cara sombreada derecha
+  pyrFaceRight.setAttribute('fill', col);
 });
 
 ch.addEventListener('pointerdown',function(e){
@@ -755,8 +905,8 @@ ch.addEventListener('pointerdown',function(e){
 ch.addEventListener('pointermove',function(e){
   if(!charDrag)return;
   var r=svg.getBoundingClientRect();
-  charPos.x=Math.max(40,Math.min(r.width-40,(e.clientX-r.left)-charOffset.x));
-  charPos.y=Math.max(40,Math.min(r.height-40,(e.clientY-r.top)-charOffset.y));
+  charPos.x=Math.max(30,Math.min(r.width-30,(e.clientX-r.left)-charOffset.x));
+  charPos.y=Math.max(30,Math.min(r.height-30,(e.clientY-r.top)-charOffset.y));
   updateCharPos();
 });
 
@@ -785,21 +935,42 @@ toggleBtn.addEventListener('click',function(e){
     toggleBtn.style.bottom='14px';
   }
 
-  setTimeout(function(){ render(); }, 50);
-  setTimeout(function(){ render(); }, 200);
+  setTimeout(function(){ render(); updateCharPos(); }, 50);
+  setTimeout(function(){ render(); updateCharPos(); }, 200);
 });
 
-var bob=0;
+/* Animación de vida y presencia 3D continua */
+var animTick=0;
 setInterval(function(){
+  animTick += 0.05;
   if(!charDrag){
-    bob+=0.06;
-    $('#foot-l').setAttribute('cy',42+Math.sin(bob)*1.8);
-    $('#foot-r').setAttribute('cy',42-Math.sin(bob)*1.8);
-  }
-},50);
+    // Movimiento orgánico de los pies
+    $('#foot-group-l').setAttribute('transform','translate(0,'+(Math.sin(animTick)*2.2).toFixed(1)+')');
+    $('#foot-group-r').setAttribute('transform','translate(0,'+(-Math.sin(animTick)*2.2).toFixed(1)+')');
+    
+    // Balanceo tridimensional de los brazos y manos
+    var armWave = Math.sin(animTick * 1.2) * 5;
+    armL.setAttribute('d', 'M -26 18 Q -46 '+(14 + armWave)+' -38 '+(-2 - armWave));
+    handL.setAttribute('cy', (-2 - armWave).toFixed(1));
+    armR.setAttribute('d', 'M 26 18 Q 46 '+(14 - armWave)+' 38 '+(-2 + armWave));
+    handR.setAttribute('cy', (-2 + armWave).toFixed(1));
 
-new ResizeObserver(render).observe(svg);
-window.addEventListener('resize',render);
+    // Respiración del volumen piramidal
+    var breathe = Math.sin(animTick * 0.8) * 1.5;
+    $('#char-body-3d').setAttribute('transform', 'translate(0, '+(-breathe*0.4).toFixed(1)+') scale('+(1 + breathe*0.01).toFixed(3)+')');
+  }
+}, 40);
+
+new ResizeObserver(function(){
+  render();
+  updateCharPos();
+}).observe(svg);
+
+window.addEventListener('resize',function(){
+  render();
+  updateCharPos();
+});
+
 updateCharPos();
 sync();
 updateCharExpression();

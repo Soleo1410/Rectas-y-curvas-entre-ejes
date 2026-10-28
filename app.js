@@ -18,7 +18,9 @@ var S={
   charName:'Triangulín'
 };
 
-var svg=$('#cv'),scene=$('#scene'),hd=$('#hd'),V={ox:0,oy:0,sc:1};
+var svg=$('#cv'),scene=$('#scene');
+var hdTop=$('#hd-top'),hdBottom=$('#hd-bottom');
+var V={ox:0,oy:0,sc:1};
 var rad=function(d){return d*Math.PI/180};
 
 var DEF={ex:'#1d4ed8',ey:'#0f766e',curve:'#ff4d6d',ang:'#f59e0b'};
@@ -53,9 +55,9 @@ function render(){
   var spanX=Math.max(2*L, maxX-minX);
   var spanY=Math.max(2*L*Math.abs(s), 14);
 
-  var M=isMobile ? 20 : 30;
+  var M=isMobile ? 22 : 32;
   var scX=(w-2*M)/spanX;
-  var scY=(h-2*M-20)/spanY;
+  var scY=(h-2*M-24)/spanY;
   
   var sc=Math.min(scX,scY) * S.zoom;
   V.sc=sc;
@@ -106,7 +108,7 @@ function render(){
     o+='<path d="'+g+'" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="3,3" fill="none"/>';
   }
 
-  /* 3. RECTAS, ENVOLVENTE Y PUNTOS DE TANGENCIA */
+  /* 3. RECTAS, ENVOLVENTE Y TANGENCIA */
   var quadSigns={
     'I':{sx:1,sy:1},
     'II':{sx:-1,sy:1},
@@ -178,11 +180,11 @@ function render(){
     o+=angleBadge(tx4, ty4, Math.round(180-S.th));
   }
 
-  /* 5. EJES */
+  /* 5. EJES CARTESIANOS */
   o+=el('ex', seg(P(-L,0), P(L,0)), 3.5);
   o+=el('ey', seg(P(0,-L), P(0,L)), 3.5);
 
-  /* 6. MARCAS Y NÚMEROS (Espaciado adaptativo contra amontonamiento en móviles) */
+  /* 6. MARCAS Y NÚMEROS */
   var st = isMobile ? (n > 20 ? 10 : 5) : (n > 25 ? 5 : (n > 12 ? 2 : 1));
   for(var m=-n;m<=n;m+=st){
     if(m===0) continue;
@@ -204,8 +206,11 @@ function render(){
 
   scene.innerHTML=o;
 
-  var hp=P(0,L);
-  hd.setAttribute('transform','translate('+hp[0].toFixed(1)+','+hp[1].toFixed(1)+')');
+  /* Ubicación de los dos agarres (Arriba +Y y Abajo -Y) */
+  var hpTop=P(0, L);
+  var hpBottom=P(0, -L);
+  hdTop.setAttribute('transform','translate('+hpTop[0].toFixed(1)+','+hpTop[1].toFixed(1)+')');
+  hdBottom.setAttribute('transform','translate('+hpBottom[0].toFixed(1)+','+hpBottom[1].toFixed(1)+')');
 }
 
 function info(id){
@@ -382,18 +387,42 @@ tog('#bGrid','grid');tog('#bAnim','anim');
 $('#bReset').onclick=function(){S.col={};S.off={};render();if(S.sel)sheet()};
 function pa(){$('#bAnim').setAttribute('aria-pressed',S.anim)}
 
-var drag=false;
-hd.addEventListener('pointerdown',function(e){drag=true;S.anim=false;pa();hd.setPointerCapture(e.pointerId);e.preventDefault()});
-hd.addEventListener('pointermove',function(e){if(!drag)return;
-  var r=svg.getBoundingClientRect(),dx=e.clientX-r.left-V.ox,dy=V.oy-(e.clientY-r.top);
-  var deg=Math.atan2(dy,dx)*180/Math.PI;
-  if(deg<0){deg=dx>=0?0:180}
-  S.th=Math.max(0,Math.min(180,deg));
-  sync();
-  updateCharExpression();
-});
-hd.addEventListener('pointerup',function(){drag=false});
-hd.addEventListener('pointercancel',function(){drag=false});
+/* SISTEMA DE ARRASTRE DUAL DE LOS EJES */
+var dragMode = null;
+
+function bindHandle(handleEl, mode){
+  handleEl.addEventListener('pointerdown', function(e){
+    dragMode = mode;
+    S.anim = false;
+    pa();
+    handleEl.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  
+  handleEl.addEventListener('pointermove', function(e){
+    if(dragMode !== mode) return;
+    var r = svg.getBoundingClientRect();
+    var dx = e.clientX - r.left - V.ox;
+    var dy = V.oy - (e.clientY - r.top);
+    
+    if(mode === 'bottom'){
+      dx = -dx;
+      dy = -dy;
+    }
+    
+    var deg = Math.atan2(dy, dx) * 180 / Math.PI;
+    if(deg < 0){ deg = dx >= 0 ? 0 : 180; }
+    S.th = Math.max(0, Math.min(180, deg));
+    sync();
+    updateCharExpression();
+  });
+
+  handleEl.addEventListener('pointerup', function(){ dragMode = null; });
+  handleEl.addEventListener('pointercancel', function(){ dragMode = null; });
+}
+
+bindHandle(hdTop, 'top');
+bindHandle(hdBottom, 'bottom');
 
 var dir=1,last=0;
 function loop(){last=performance.now();requestAnimationFrame(step)}
@@ -408,9 +437,12 @@ function step(t){
   requestAnimationFrame(step);
 }
 
-/* Personaje */
+/* COMPORTAMIENTO Y PERSONALIDAD 3D DE TRIANGULÍN */
 var ch=$('#char'),chMouth=$('#char-mouth'),chSpeech=$('#char-speech');
-var armL=$('#arm-l'),armR=$('#arm-r'),baseBody=$('#char-base');
+var armL=$('#arm-l'),armR=$('#arm-r');
+var handL=$('#hand-l'),handR=$('#hand-r');
+var pyrFaceLeft=$('#pyr-face-left'),pyrFaceRight=$('#pyr-face-right');
+var browL=$('#brow-l'),browR=$('#brow-r');
 
 var isInitMobile = window.innerWidth < 480;
 var charPos={x: isInitMobile ? 45 : 70, y: isInitMobile ? 45 : 70};
@@ -423,26 +455,37 @@ function updateCharPos(){
 }
 
 function say(texto){
-  var nom=S.charName||'Tri';
+  var nom=S.charName||'Triangulín';
   chSpeech.innerHTML='<strong>'+nom+':</strong> '+texto;
 }
 
 function updateCharExpression(){
   var th=Math.round(S.th);
   if(th===60){
+    chMouth.setAttribute('d','M -9 24 Q 0 36 9 24');
+    browL.setAttribute('d','M -21 -10 Q -13 -18 -6 -14');
+    browR.setAttribute('d','M 6 -14 Q 13 -18 21 -10');
     say("¡Ángulo agudo de 60°! Mirá cómo se comprime la parábola.");
   } else if(th===120){
+    chMouth.setAttribute('d','M -8 24 Q 0 35 8 24');
+    browL.setAttribute('d','M -21 -15 Q -13 -14 -6 -10');
+    browR.setAttribute('d','M 6 -10 Q 13 -14 21 -15');
     say("¡Ángulo obtuso de 120°! Mirá cómo se ensancha.");
   } else if(th===0){
-    chMouth.setAttribute('d','M -6 28 L 6 28');
+    chMouth.setAttribute('d','M -8 28 L 8 28');
+    browL.setAttribute('d','M -20 -12 L -6 -12');
+    browR.setAttribute('d','M 6 -12 L 20 -12');
     say("0° Superpuestos sobre una semirrecta.");
   } else if(th===180){
-    chMouth.setAttribute('d','M -10 22 Q 0 34 10 22 Z');
+    chMouth.setAttribute('d','M -10 24 Q 0 36 10 24 Z');
     say("180° Recta continua.");
   } else if(th===90){
-    chMouth.setAttribute('d','M -8 24 Q 0 31 8 24');
+    chMouth.setAttribute('d','M -9 26 Q 0 34 9 26');
+    browL.setAttribute('d','M -21 -13 Q -13 -16 -6 -12');
+    browR.setAttribute('d','M 6 -12 Q 13 -16 21 -13');
     say("90° Ángulo recto clásico.");
   } else {
+    chMouth.setAttribute('d','M -8 26 Q 0 32 8 26');
     say("Ángulo actual: "+th+"°");
   }
 }
@@ -456,8 +499,11 @@ $('#triName').addEventListener('input',function(e){
   S.charName=e.target.value.trim()||'Tri';
   updateCharExpression();
 });
+
 $('#triColor').addEventListener('input',function(e){
-  baseBody.setAttribute('fill',e.target.value);
+  var col = e.target.value;
+  pyrFaceLeft.setAttribute('fill', col);
+  pyrFaceRight.setAttribute('fill', col);
 });
 
 ch.addEventListener('pointerdown',function(e){
@@ -507,14 +553,24 @@ toggleBtn.addEventListener('click',function(e){
   setTimeout(function(){ render(); updateCharPos(); }, 200);
 });
 
-var bob=0;
+/* Animación continua de vida 3D */
+var animTick=0;
 setInterval(function(){
+  animTick += 0.05;
   if(!charDrag){
-    bob+=0.06;
-    $('#foot-l').setAttribute('cy',42+Math.sin(bob)*1.8);
-    $('#foot-r').setAttribute('cy',42-Math.sin(bob)*1.8);
+    $('#foot-group-l').setAttribute('transform','translate(0,'+(Math.sin(animTick)*2.2).toFixed(1)+')');
+    $('#foot-group-r').setAttribute('transform','translate(0,'+(-Math.sin(animTick)*2.2).toFixed(1)+')');
+    
+    var armWave = Math.sin(animTick * 1.2) * 5;
+    armL.setAttribute('d', 'M -26 18 Q -46 '+(14 + armWave)+' -38 '+(-2 - armWave));
+    handL.setAttribute('cy', (-2 - armWave).toFixed(1));
+    armR.setAttribute('d', 'M 26 18 Q 46 '+(14 - armWave)+' 38 '+(-2 + armWave));
+    handR.setAttribute('cy', (-2 + armWave).toFixed(1));
+
+    var breathe = Math.sin(animTick * 0.8) * 1.5;
+    $('#char-body-3d').setAttribute('transform', 'translate(0, '+(-breathe*0.4).toFixed(1)+') scale('+(1 + breathe*0.01).toFixed(3)+')');
   }
-},50);
+}, 40);
 
 new ResizeObserver(function(){
   render();
